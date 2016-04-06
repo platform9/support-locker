@@ -105,21 +105,25 @@ mgmtDns2=$(getValidInput "DNS Server 2: " "ipAddress")
 # External Interface Variables
 extVlan=$(getValidInput "External vLan ID: " "vlan")
 
-# VXLan Variables
-tunnelTrue=$(getValidInput "Are you using a separate vlan for tunneling? " "yesNo")
+# vxLan or GRE?
+tunnelTrue=$(getValidInput "Do you plan on using vxLan or GRE tunneling? " "yesNo")
 
-if [ "$tunnelTrue" == "y" ]; then
+# VXLan Variables
+seperateTunnel=$(getValidInput "Are you using a separate vlan for tunneling? " "yesNo")
+
+if [ "$seperateTunnel" == "y" ]; then
   tunnelVlanId=$(getValidInput "Tunnel Lan ID: " "vlan")
   tunnelIp=$(getValidInput "Tunnel IP Address: " "ipAddress")
   tunnelSubnet=$(getValidInput "Tunnel Subnet Mask: " "netMask")
+fi
+if [ "$tunnelTrue" == "y" ]; then  
+  printf "${RED} !!! Ensure your switches are configured to handle this MTU !!!${NC}\n"
   mtuSize=$(getValidInput "Tunneling requires a minimum MTU of 1600. Please choose an MTU size between 1600-9000: " "mtu")
 fi
 
-neutronNodeTrue=$(getValidInput "Are you running this script on the network node? " "yesNo")
-
 nfsTrue=$(getValidInput "Are you using NFS for Instances, Images, or Block Storage? " "yesNo")
 
-#vlanTrue=$(getValidInput "Are you using vLan segmentation? " "yesNo")
+vlanTrue=$(getValidInput "Are you using vLan segmentation? Or planning to have provider networks?" "yesNo")
 
 printf "${GREEN}You have cooperated nicely by answering the questions asked of you!${NC}\n\n"
 printf "${CYAN}"
@@ -138,9 +142,8 @@ if [ "$tunnelTrue" == "y" ]; then
   printf "Tunnel Subnet Mask: $tunnelSubnet\n"
   printf "Plese choose an MTU size between 1600-9000: $mtuSize\n"
 fi
-printf "Are you running this script on the network node? $neutronNodeTrue\n"
 printf "Are you using NFS for Instances, Images, or Block Storage? $nfsTrue\n"
-#printf "Are you using vLan segmentation? $vlanTrue\n"
+printf "Are you using vLan segmentation? $vlanTrue\n"
 printf "${NC}\n"
 finalAnswer=$(getValidInput "Are these your final answers?! " "yesNo")
 if [ "$finalAnswer" == "n" ]; then 
@@ -161,20 +164,19 @@ echo 'mgmtDns1='$mgmtDns1 >> $hostProfileScriptName
 echo 'mgmtDns2='$mgmtDns2 >> $hostProfileScriptName
 echo 'extVlan='$extVlan >> $hostProfileScriptName
 echo 'tunnelTrue='$tunnelTrue >> $hostProfileScriptName
-if [ "$tunnelTrue" == "y" ]; then
+echo 'seperateTunnel='$seperateTunnel >> $hostProfileScriptName
+if [ "$seperateTunnel" == "y" ]; then
   echo 'tunnelIp=$(getValidInput "Tunnel IP Address: " "ipAddress")' >> $hostProfileScriptName
   echo 'tunnelVlanId='$tunnelVlanId >> $hostProfileScriptName
   echo 'tunnelSubnet='$tunnelSubnet >> $hostProfileScriptName
-  echo 'mtuSize='$mtuSize >> $hostProfileScriptName
 fi
-if [ "$neutronNodeTrue" == "y" ]; then
-  echo 'neutronNodeTrue=n' >> $hostProfileScriptName
-else
-  echo 'neutronNodeTrue=$(getValidInput "Are you running this script on the network node? " "yesNo")' >> $hostProfileScriptName
+if [ "$tunnelTrue" == "y" ]; then 
+  echo 'mtuSize='$mtuSize >> $hostProfileScriptName
 fi
 echo 'nfsTrue='$nfsTrue >> $hostProfileScriptName
 
-tail -145 $0 >> $hostProfileScriptName
+tail -137 $0 >> $hostProfileScriptName
+
 
 
 
@@ -185,6 +187,11 @@ printf "\n${RED}!!! We are setting SELINUX to permisive !!!\n!!! This is require
 sed -i s/SELINUX=enforcing/SELINUX=permissive/g /etc/selinux/config
 setenforce 0
 
+# Disable firewalld
+printf "\n${RED}!!! We are setting disabling FIREWALLD !!!\n!!! Neutron and KVM will use IPTABLES directly !!!${NC}\n"
+systemctl disable firewalld
+systemctl stop firewalld
+
 # Load modules needed for neutron
 modprobe bridge
 modprobe 8021q
@@ -194,9 +201,7 @@ putLineInFile '# Needed for neutron networking' '/etc/sysctl.conf'
 putLineInFile 'net.ipv4.conf.all.rp_filter=0' '/etc/sysctl.conf'
 putLineInFile 'net.ipv4.conf.default.rp_filter=0' '/etc/sysctl.conf'
 putLineInFile 'net.bridge.bridge-nf-call-iptables=1' '/etc/sysctl.conf'
-if [ "$neutronNodeTrue" == "y" ]; then
-  putLineInFile 'net.ipv4.ip_forward=1' '/etc/sysctl.conf'
-fi
+putLineInFile 'net.ipv4.ip_forward=1' '/etc/sysctl.conf'
 
 # Reload sysctl
 sysctl -p
@@ -261,6 +266,8 @@ echo OVS_BRIDGE=br-vlan >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
 if [ "$tunnelTrue" == "y" ]; then
   # Add larger MTU to the physical interface
   echo MTU=$mtuSize >>/etc/sysconfig/network-scripts/ifcfg-$phyInt
+fi
+if [ "$seperateTunnel" == "y" ]; then
   # Create Sub-Interface for tunneling
   echo DEVICE=$phyInt.$tunnelVlan > /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
   echo IPADDR=$tunnelIp >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
@@ -271,54 +278,42 @@ if [ "$tunnelTrue" == "y" ]; then
   echo TYPE=Vlan >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
 fi
 
-echo ""
-echo ""
-echo "Network config complete!"
-echo "Please review the following config files:"
-echo ""
+printf "\n\n${GREEN}Network config complete!${NC}\n"
+printf "${YELLOW}Please review the following config files:${NC}\n\n\n"
 
-echo "Management Interface:  /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan"
-echo ""
+printf "${GREEN}Management Interface:  /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan${NC}\n\n"
+printf "${YELLOW}"
 cat /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
+printf "${NC}\n\n\n"
 
-echo ""
-echo ""
-echo "External Bridge:  /etc/sysconfig/network-scripts/ifcfg-br-ext"
-echo ""
+printf "${GREEN}External Bridge:  /etc/sysconfig/network-scripts/ifcfg-br-ext${NC}\n\n"
+printf "${YELLOW}"
 cat /etc/sysconfig/network-scripts/ifcfg-br-ext
+printf "${NC}\n\n\n"
 
-echo ""
-echo ""
-echo "External Interface:  /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan"
-echo ""
+printf "\n\n${GREEN}External Interface:  /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan${NC}\n\n"
+printf "${YELLOW}"
 cat /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
+printf "${NC}\n\n\n"
 
 if [ "$vlanTrue" == "y" ]; then
-  echo ""
-  echo ""
-  echo "vLan Bridge: /etc/sysconfig/network-scripts/ifcfg-br-vlan"
-  echo ""
+  printf "${GREEN}Lan Bridge: /etc/sysconfig/network-scripts/ifcfg-br-vlan${NC}\n\n"
+  printf "${YELLOW}"
   cat /etc/sysconfig/network-scripts/ifcfg-br-vlan
-  
-  echo ""
-  echo ""
-  echo "Physical Interface:  /etc/sysconfig/network-scripts/ifcfg-br-vlan"
-  echo ""
-  cat /etc/sysconfig/network-scripts/ifcfg-br-vlan
+  printf "${NC}\n\n\n"
 fi
 
 if [ "$vxlanTrue" == "y" ]; then
-  echo ""
-  echo ""
-  echo "VXLan Interface:  /etc/sysconfig/network-scripts/ifcfg-$phyInt.$vxlanVlan"
-  echo ""
+  printf "${GREEN}VXLan Interface:  /etc/sysconfig/network-scripts/ifcfg-$phyInt.$vxlanVlan${NC}\n\n"
+  printf "${YELLOW}"
   cat /etc/sysconfig/network-scripts/ifcfg-$phyInt.$vxlanVlan
+  printf "${NC}\n\n\n"
 fi
 
-read -p "!!! Only if all of the above look correct, type yes to restart networking!  " yn
+printf "${RED}"
+read -p "!!! Only if all of the above look correct, type yes to restart networking !!! " yn
+printf "${NC}"
 case $yn in
   [Yy]* ) systemctl restart network.service;;
 esac
-echo ""
-echo ""
-echo "DONE!!!"
+echo "\n\n${GREEN}DONE!!!${NC}\n"
