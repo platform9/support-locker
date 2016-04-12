@@ -17,9 +17,10 @@ def main():
     sessionInfo = {}
     # The next block of code asks for all of the info we need to run this script
     sessionInfo['identityApiEndpoint'] = raw_input('Keystone API URL:  ') 
-    sessionInfo['osTenant'] = raw_input('Tenant Name:  ')
     sessionInfo['osUsername'] = raw_input('OpenStack Username:  ')
     sessionInfo['osPassword'] = getpass.getpass('OpenStack Password:  ')
+    sessionInfo['osTenant'] = raw_input('OpenStack Tenant:  ')
+    sessionInfo['osRegion'] = raw_input(' OpenStack Region:  ')
     sessionInfo['checkInterval'] = raw_input('How far back do you want to check for events? In minutes: ')
     sessionInfo['eventType'] = raw_input('What type of OpenStack event are you looking to check for?  ')
     sessionInfo['fromAddress'] = raw_input('Which email address would you like to send these events from?  ')
@@ -72,7 +73,9 @@ def main():
     # The next four lines stores service details into the service object using the service type as the key.
     service = {}
     service['name'] = svc['name']
-    service['url'] = svc['endpoints'][0]['publicURL']
+    for endpoint in svc['endpoints']:
+      if (endpoint['region'] == sessionInfo['osRegion']):
+        service['url'] = endpoint['publicURL']
     services[svc['type']] = service
 
   # Header we will use to authenticate to other API Endpoints
