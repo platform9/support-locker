@@ -53,7 +53,7 @@ function getValidInput() {
       errMessage="Please enter a valid MTU between 1600-9000!"
       checkValid=$(validMtu $getInput)
     elif [ "$2" == "freeText" ]; then
-      checkValid = "Valid"
+      checkValid="Valid"
     else
       printf "${RED}!!! Invalid Paramaters sent to getValidInput Fuction !!!${NC}\n" >&2
     fi
