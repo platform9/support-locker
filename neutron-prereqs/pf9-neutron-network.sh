@@ -191,7 +191,7 @@ if [ "$tunnelTrue" == "y" ]; then
 fi
 echo 'nfsTrue='$nfsTrue >> $hostProfileScriptName
 
-tail -137 $0 >> $hostProfileScriptName
+tail -253 $0 >> $hostProfileScriptName
 
 
 
@@ -373,27 +373,10 @@ elif [$OS == 'Ubuntu']; then
   echo "iface lo inet loopback" >> /etc/network/interfaces
   echo "" >> /etc/network/interfaces
   
-  # Define physical interface
-  echo "# Physical Interface" >> /etc/network/interfaces
-  echo "auto" >> /etc/network/interfaces
-  echo "iface $phyInt inet manual" >> /etc/network/interfaces
-  echo "" >> /etc/network/interfaces
-  
-  if [ "$tunnelTrue" == "y" ]; then
-    # Create sub-interface for tunneling
-    echo "# Tunneling Sub-Interface" >> /etc/network/interfaces
-    echo "auto $phyInt.$tunnelVlanId"  >> /etc/network/interfaces
-    echo "iface $phyInt.$tunnelVlanId inet manual" >> /etc/network/interfaces
-    echo "  address $tunnelIp" >> /etc/network/interfaces
-    echo "  netmask $tunnelSubnet" >> /etc/network/interfaces
-    echo "" >> /etc/network/interfaces
-  fi
-
-  # Setup External Network
-  ## Create sub-interface for external network
-  echo "# External Sub-Interface" >> /etc/network/interfaces
+  # Define Sub-Interface interface for Management
+  echo "# Management Sub-Interface" >> /etc/network/interfaces
   echo "auto $phyInt.$mgmtVlan"  >> /etc/network/interfaces
-  echo "iface $phyInt.$mgmtVlan inet manual" >> /etc/network/interfaces
+  echo "iface $phyInt.$mgmtVlan inet static" >> /etc/network/interfaces
   echo "  address $mgmtIp" >> /etc/network/interfaces
   echo "  netmask $mgmtSubnet" >> /etc/network/interfaces
   echo "  gateway $mgmtGateway" >> /etc/network/interfaces
@@ -402,23 +385,66 @@ elif [$OS == 'Ubuntu']; then
   echo "" >> /etc/network/interfaces
 
 
-  ## Create and Slave External Sub-Interface to External Bridge
-
-
+  if [ "$seperateTunnel" == "y" ]; then
+    # Define Sub-Interface interface for tunneling
+    echo "# Tunneling Sub-Interface" >> /etc/network/interfaces
+    echo "auto $phyInt.$tunnelVlanId"  >> /etc/network/interfaces
+    echo "iface $phyInt.$tunnelVlanId inet static" >> /etc/network/interfaces
+    echo "  address $tunnelIp" >> /etc/network/interfaces
+    echo "  netmask $tunnelSubnet" >> /etc/network/interfaces
+    echo "" >> /etc/network/interfaces
+  fi
+  # Setup External Network
+  ## Create External Bridge
+  echo "# External Bridge" >> /etc/network/interfaces
+  echo "allow-ovs br-ext" >> /etc/network/interfaces
+  echo "iface br-ex inet manual" >> /etc/network/interfaces
+  echo "  ovs_type OVSBridge" >> /etc/network/interfaces
+  echo "  ovs_ports $phyInt.$extVlan" >> /etc/network/interfaces
+  
+  ## Create sub-interface for external network
+  echo "# External Sub-Interface" >> /etc/network/interfaces
+  echo "allow-br-ext $phyInt.$extVlan"  >> /etc/network/interfaces
+  echo "iface $phyInt.$extVlan inet manual" >> /etc/network/interfaces
+  echo "  ovs_type OVSPort" >> /etc/network/interfaces
+  echo "  ovs_bridge br-ext" >> /etc/network/interfaces
+  echo "" >> /etc/network/interfaces
+  
+  # Setup vLan Trunk for provider and tenant networks.
+  echo "# vLan Bridge" >> /etc/network/interfaces
+  echo "allow-ovs br-vlan" >> /etc/network/interfaces
+  echo "iface br-vlan inet static" >> /etc/network/interfaces
+  echo "  ovs_type OVSBridge" >> /etc/network/interfaces
+  echo "  ovs_ports $phyInt" >> /etc/network/interfaces
+  echo "" >> /etc/network/interfaces
   ## Setup Bridge for vLan Trunk
-
-
-  ## Slave Physical Interface to vLan Bridge
-
-
+  echo "# Physical Interface" >> /etc/network/interfaces
+  echo "allow-br-vlan $phyInt" >> /etc/network/interfaces
+  echo "iface $phyInt inet manual" >> /etc/network/interfaces
+  echo "  ovs_bridge br-vlan" >> /etc/network/interfaces
+  echo "  ovs_type OVSPort" >> /etc/network/interfaces
   if [ "$tunnelTrue" == "y" ]; then
     # Add larger MTU to the physical interface
-    
+    echo "  mtu $mtuSize" >> /etc/network/interfaces
   fi
-  if [ "$seperateTunnel" == "y" ]; then
-    # Create Sub-Interface for tunneling
+  echo "" >> /etc/network/interfaces
 
-  fi
+  printf "\n\n${GREEN}Network config complete!${NC}\n"
+  printf "${YELLOW}Please review the following config file:${NC}\n\n\n"
+
+  printf "${GREEN}Interfaces File:  /etc/network/interfaces{NC}\n\n"
+  printf "${YELLOW}"
+  cat /etc/network/interfaces
+  printf "${NC}\n\n\n"
+
+  printf "${RED}"
+  read -p "!!! Only if all of the above look correct, type yes to reboot your host !!! " yn
+  printf "${NC}"
+  case $yn in
+    [Yy]* ) reboot;;
+  esac
+  echo "\n\n${GREEN}DONE!!!${NC}\n"
 else
   printf "${RED}!!! Somehow we lost which operating system you are using !!!${NC}\n"
+  printf "${RED}!!! Ending Script !!!${NC}\n"
 fi
