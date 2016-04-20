@@ -401,7 +401,7 @@ elif [ $OS == 'Ubuntu' ]; then
   ## Create External Bridge
   echo "# External Bridge" >> /etc/network/interfaces
   echo "allow-ovs br-ext" >> /etc/network/interfaces
-  echo "iface br-ex inet manual" >> /etc/network/interfaces
+  echo "iface br-ext inet manual" >> /etc/network/interfaces
   echo "  ovs_type OVSBridge" >> /etc/network/interfaces
   echo "  ovs_ports $phyInt.$extVlan" >> /etc/network/interfaces
   echo "" >> /etc/network/interfaces
@@ -417,7 +417,7 @@ elif [ $OS == 'Ubuntu' ]; then
   # Setup vLan Trunk for provider and tenant networks.
   echo "# vLan Bridge" >> /etc/network/interfaces
   echo "allow-ovs br-vlan" >> /etc/network/interfaces
-  echo "iface br-vlan inet static" >> /etc/network/interfaces
+  echo "iface br-vlan inet manual" >> /etc/network/interfaces
   echo "  ovs_type OVSBridge" >> /etc/network/interfaces
   echo "  ovs_ports $phyInt" >> /etc/network/interfaces
   echo "" >> /etc/network/interfaces
