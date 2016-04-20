@@ -360,8 +360,8 @@ elif [ $OS == 'Ubuntu' ]; then
   echo 'deb http://platform9-neutron.s3-website-us-west-1.amazonaws.com ubuntu/' > /etc/apt/sources.list.d/platform9-neutron-ubuntu.list
 
   # Update Apt Source
-  apt-get udpate
-  
+  apt-get update
+
   # Install openvswitch
   apt-get -y --force-yes install openvswitch-switch
   
