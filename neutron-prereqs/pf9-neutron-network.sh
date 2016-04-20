@@ -67,7 +67,7 @@ function getValidInput() {
 }
 
 function putLineInFile() {
-  if grep -Fxq "$1" $2; then
+  if [ grep -Fxq "$1" $2 ]; then
     printf "${CYAN}'$2' ${GREEN}already contains${CYAN} '$1'${NC}\n" >&2
   else
     echo "$1" >> $2
@@ -77,7 +77,7 @@ function putLineInFile() {
 function whichOS() {
   if [ -f /etc/redhat-release ]; then
     echo 'Enterprise Linux'
-  elif [ -f /etc/lsb-release]; then
+  elif [ -f /etc/lsb-release ]; then
     echo 'Ubuntu'
   else
     echo 'Unknown Operating System'
@@ -197,7 +197,7 @@ tail -253 $0 >> $hostProfileScriptName
 
 
 
-if [$OS == 'Enterprise Linux']; then
+if [ $OS == 'Enterprise Linux' ]; then
 
   # Disable SELinux
   printf "\n${RED}!!! We are setting SELINUX to permisive !!!\n!!! This is required for Software Definded Networks !!!${NC}\n"
@@ -334,7 +334,7 @@ if [$OS == 'Enterprise Linux']; then
     [Yy]* ) systemctl restart network.service;;
   esac
   echo "\n\n${GREEN}DONE!!!${NC}\n"
-elif [$OS == 'Ubuntu']; then
+elif [ $OS == 'Ubuntu' ]; then
   # Install the vLan package
   apt-get -y install vlan
 
