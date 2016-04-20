@@ -67,7 +67,7 @@ function getValidInput() {
 }
 
 function putLineInFile() {
-  if [ grep -Fxq "$1" $2 ]; then
+  if grep -Fxq "$1" $2; then
     printf "${CYAN}'$2' ${GREEN}already contains${CYAN} '$1'${NC}\n" >&2
   else
     echo "$1" >> $2
@@ -333,7 +333,7 @@ if [ $OS == 'Enterprise Linux' ]; then
   case $yn in
     [Yy]* ) systemctl restart network.service;;
   esac
-  echo "\n\n${GREEN}DONE!!!${NC}\n"
+  printf "\n\n${GREEN}DONE!!!${NC}\n"
 elif [ $OS == 'Ubuntu' ]; then
   # Install the vLan package
   apt-get -y install vlan
@@ -401,6 +401,7 @@ elif [ $OS == 'Ubuntu' ]; then
   echo "iface br-ex inet manual" >> /etc/network/interfaces
   echo "  ovs_type OVSBridge" >> /etc/network/interfaces
   echo "  ovs_ports $phyInt.$extVlan" >> /etc/network/interfaces
+  echo "" >> /etc/network/interfaces
   
   ## Create sub-interface for external network
   echo "# External Sub-Interface" >> /etc/network/interfaces
@@ -432,7 +433,7 @@ elif [ $OS == 'Ubuntu' ]; then
   printf "\n\n${GREEN}Network config complete!${NC}\n"
   printf "${YELLOW}Please review the following config file:${NC}\n\n\n"
 
-  printf "${GREEN}Interfaces File:  /etc/network/interfaces{NC}\n\n"
+  printf "${GREEN}Interfaces File:  /etc/network/interfaces${NC}\n\n"
   printf "${YELLOW}"
   cat /etc/network/interfaces
   printf "${NC}\n\n\n"
@@ -443,7 +444,7 @@ elif [ $OS == 'Ubuntu' ]; then
   case $yn in
     [Yy]* ) reboot;;
   esac
-  echo "\n\n${GREEN}DONE!!!${NC}\n"
+  printf "\n\n${GREEN}DONE!!!${NC}\n"
 else
   printf "${RED}!!! Somehow we lost which operating system you are using !!!${NC}\n"
   printf "${RED}!!! Ending Script !!!${NC}\n"
