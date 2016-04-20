@@ -359,6 +359,9 @@ elif [ $OS == 'Ubuntu' ]; then
   # Add PF9 Apt Source
   echo 'deb http://platform9-neutron.s3-website-us-west-1.amazonaws.com ubuntu/' > /etc/apt/sources.list.d/platform9-neutron-ubuntu.list
 
+  # Update Apt Source
+  apt-get udpate
+  
   # Install openvswitch
   apt-get -y --force-yes install openvswitch-switch
   
