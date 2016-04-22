@@ -124,19 +124,18 @@ extVlan=$(getValidInput "External vLan ID: " "vlan")
 tunnelTrue=$(getValidInput "Do you plan on using vxLan or GRE tunneling? " "yesNo")
 
 # VXLan Variables
-seperateTunnel=$(getValidInput "Are you using a separate vlan for tunneling? " "yesNo")
+if [ "$tunnelTrue" == "y" ]; then  
+  seperateTunnel=$(getValidInput "Are you using a separate vlan for tunneling? " "yesNo")
+  printf "${YELLOW} ### Ensure your switches are configured to handle this MTU ###${NC}\n"
+  mtuSize=$(getValidInput "Tunneling requires a minimum MTU of 1600. Please choose an MTU size between 1600-9000: " "mtu")
+fi
 
 if [ "$seperateTunnel" == "y" ]; then
   tunnelVlanId=$(getValidInput "Tunnel Lan ID: " "vlan")
   tunnelIp=$(getValidInput "Tunnel IP Address: " "ipAddress")
   tunnelSubnet=$(getValidInput "Tunnel Subnet Mask: " "netMask")
 fi
-if [ "$tunnelTrue" == "y" ]; then  
-  printf "${RED} !!! Ensure your switches are configured to handle this MTU !!!${NC}\n"
-  mtuSize=$(getValidInput "Tunneling requires a minimum MTU of 1600. Please choose an MTU size between 1600-9000: " "mtu")
-fi
 
-nfsTrue=$(getValidInput "Are you using NFS for Instances, Images, or Block Storage? " "yesNo")
 
 vlanTrue=$(getValidInput "Are you using vLan segmentation? Or planning to have provider networks?" "yesNo")
 
@@ -158,7 +157,6 @@ if [ "$tunnelTrue" == "y" ]; then
   printf "Tunnel Subnet Mask: $tunnelSubnet\n"
   printf "Please choose an MTU size between 1600-9000: $mtuSize\n"
 fi
-printf "Are you using NFS for Instances, Images, or Block Storage? $nfsTrue\n"
 printf "Are you using vLan segmentation? $vlanTrue\n"
 printf "${NC}\n"
 finalAnswer=$(getValidInput "Are these your final answers?! " "yesNo")
@@ -189,9 +187,8 @@ fi
 if [ "$tunnelTrue" == "y" ]; then 
   echo 'mtuSize='$mtuSize >> $hostProfileScriptName
 fi
-echo 'nfsTrue='$nfsTrue >> $hostProfileScriptName
 
-tail -253 $0 >> $hostProfileScriptName
+tail -264 $0 >> $hostProfileScriptName
 
 
 
@@ -223,10 +220,6 @@ if [ $OS == 'Enterprise Linux' ]; then
   # Reload sysctl
   sysctl -p
 
-  if [ "$nfsTrue" == "y" ]; then
-    yum -y install nfsutils
-  fi
-
   # Add PF9 Yum Repo
   yum -y install https://s3-us-west-1.amazonaws.com/platform9-neutron/noarch/platform9-neutron-repo-1-0.noarch.rpm
 
@@ -248,6 +241,12 @@ if [ $OS == 'Enterprise Linux' ]; then
   echo GATEWAY=$mgmtGateway >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
   echo DNS1=$mgmtDns1 >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
   echo DNS2=$mgmtDns2 >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
+  if [ "$tunnelTrue" == "y" ]; then
+    if [ "$seperateTunnel" == "n" ]; then
+      # Add larger MTU to the physical interface
+      echo MTU=$mtuSize >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
+    fi
+  fi
 
   # Setup External Network
   ## Create Bridge for External Network
@@ -264,26 +263,23 @@ if [ $OS == 'Enterprise Linux' ]; then
   echo TYPE=OVSPort >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
   echo DEVICETYPE=ovs >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
   echo OVS_BRIDGE=br-ext >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
+  if [ "$vlanTrue" == "y" ]; then
+    ## Setup Bridge for vLan Trunk
+    echo DEVICE=br-vlan > /etc/sysconfig/network-scripts/ifcfg-br-vlan
+    echo BOOTPROTO=none >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
+    echo ONBOOT=yes >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
+    echo TYPE=OVSBridge >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
+    echo DEVICETYPE=ovs >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
 
-  ## Setup Bridge for vLan Trunk
-  echo DEVICE=br-vlan > /etc/sysconfig/network-scripts/ifcfg-br-vlan
-  echo BOOTPROTO=none >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
-  echo ONBOOT=yes >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
-  echo TYPE=OVSBridge >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
-  echo DEVICETYPE=ovs >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
-
-  ## Slave Physical Interface to vLan Bridge
-  mv /etc/sysconfig/network-scripts/ifcfg-$phyInt ~/old-ifcfg-$phyInt
-  echo DEVICE=$phyInt > /etc/sysconfig/network-scripts/ifcfg-$phyInt
-  echo ONBOOT=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
-  echo TYPE=OVSPort >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
-  echo DEVICETYPE=ovs >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
-  echo OVS_BRIDGE=br-vlan >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
-
-  if [ "$tunnelTrue" == "y" ]; then
-    # Add larger MTU to the physical interface
-    echo MTU=$mtuSize >>/etc/sysconfig/network-scripts/ifcfg-$phyInt
+    ## Slave Physical Interface to vLan Bridge
+    mv /etc/sysconfig/network-scripts/ifcfg-$phyInt ~/old-ifcfg-$phyInt
+    echo DEVICE=$phyInt > /etc/sysconfig/network-scripts/ifcfg-$phyInt
+    echo ONBOOT=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
+    echo TYPE=OVSPort >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
+    echo DEVICETYPE=ovs >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
+    echo OVS_BRIDGE=br-vlan >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
   fi
+
   if [ "$seperateTunnel" == "y" ]; then
     # Create Sub-Interface for tunneling
     echo DEVICE=$phyInt.$tunnelVlan > /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
@@ -293,6 +289,7 @@ if [ $OS == 'Enterprise Linux' ]; then
     echo BOOTPROTO=none >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
     echo VLAN=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
     echo TYPE=Vlan >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
+    echo MTU=$mtuSize >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
   fi
 
   printf "\n\n${GREEN}Network config complete!${NC}\n"
@@ -385,6 +382,12 @@ elif [ $OS == 'Ubuntu' ]; then
   echo "  gateway $mgmtGateway" >> /etc/network/interfaces
   echo "  dns-nameservers $mgmtDns1 $mgmtDns2" >> /etc/network/interfaces
   echo "  dns-search $mgmtSearchDomain" >> /etc/network/interfaces
+  if [ "$tunnelTrue" == "y" ]; then
+    if [ "$seperateTunnel" == "n" ]; then
+      # Add larger MTU to the physical interface
+      echo "  mtu $mtuSize" >> /etc/network/interfaces
+    fi
+  fi
   echo "" >> /etc/network/interfaces
 
 
@@ -395,6 +398,10 @@ elif [ $OS == 'Ubuntu' ]; then
     echo "iface $phyInt.$tunnelVlanId inet static" >> /etc/network/interfaces
     echo "  address $tunnelIp" >> /etc/network/interfaces
     echo "  netmask $tunnelSubnet" >> /etc/network/interfaces
+    if [ "$tunnelTrue" == "y" ]; then
+      # Add larger MTU to the physical interface
+      echo "  mtu $mtuSize" >> /etc/network/interfaces
+    fi
     echo "" >> /etc/network/interfaces
   fi
   # Setup External Network
@@ -427,10 +434,7 @@ elif [ $OS == 'Ubuntu' ]; then
   echo "iface $phyInt inet manual" >> /etc/network/interfaces
   echo "  ovs_bridge br-vlan" >> /etc/network/interfaces
   echo "  ovs_type OVSPort" >> /etc/network/interfaces
-  if [ "$tunnelTrue" == "y" ]; then
-    # Add larger MTU to the physical interface
-    echo "  mtu $mtuSize" >> /etc/network/interfaces
-  fi
+
   echo "" >> /etc/network/interfaces
 
   printf "\n\n${GREEN}Network config complete!${NC}\n"
