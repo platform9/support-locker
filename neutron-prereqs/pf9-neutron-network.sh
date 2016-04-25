@@ -201,10 +201,12 @@ if [ $configNetworking == "y" ]; then
   printf "${CYAN}"
   printf "Physical Interface: $phyInt\n"
   if [ "$configureBonding" == "y" ]; then
+    printf "Configure Bonding? $configureBonding"
+    printf "Bonding Mode: $bondingMode"
     i=0
     for slaveInt in "${bondingInts[@]}"; do
       ((i++))
-      printf "Slave 0$i:  $slaveInt"
+      printf "Slave 0$i:  $slaveInt\n"
     done
   fi
   printf "Management vLan ID: $mgmtVlan\n"
@@ -539,10 +541,10 @@ elif [ $OS == 'Ubuntu' ]; then
         echo "  bond-mode $bondingMode" >> /etc/network/interfaces
         echo "" >> /etc/network/interfaces
         for slaveInt in "${bondingInts[@]}"; do
-          echo "# Slaving $slaveInt to Master $phyInt"
-          echo "auto $slaveInt"
-          echo "iface $slaveInt inet manual"
-          echo "bond-master $phyInt"
+          echo "# Slaving $slaveInt to Master $phyInt" >> /etc/network/interfaces
+          echo "auto $slaveInt" >> /etc/network/interfaces
+          echo "iface $slaveInt inet manual" >> /etc/network/interfaces
+          echo "  bond-master $phyInt" >> /etc/network/interfaces
           echo "" >> /etc/network/interfaces
         done
       fi
