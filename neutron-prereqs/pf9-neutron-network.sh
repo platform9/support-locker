@@ -139,8 +139,11 @@ if [ $configNetworking == "y" ]; then
           elif [ ${#bondingInts[@]} == 4 ]; then
             break
           fi
+          echo "0) Ints in Bond:  ${bondingInts[@]}"
         fi
+        echo "1) Ints in Bond:  ${bondingInts[@]}"
       done
+      echo "2) Ints in Bond:  ${bondingInts[@]}"
       phyInt='bond0'
       # I need to be adding bonds to an array in the future in case they want to configure more than one.
     else
@@ -159,7 +162,9 @@ if [ $configNetworking == "y" ]; then
         fi  
       done
     fi
+    echo "3) Ints in Bond:  ${bondingInts[@]}"
   fi
+  echo "4) Ints in Bond:  ${bondingInts[@]}"
   printf "${GREEN}Using Interface: $phyInt${NC}\n"
 
   # Management Interface Variables
@@ -195,6 +200,13 @@ if [ $configNetworking == "y" ]; then
   printf "${GREEN}You have cooperated nicely by answering the questions asked of you!${NC}\n\n"
   printf "${CYAN}"
   printf "Physical Interface: $phyInt\n"
+  if [ "$configureBonding" == "y" ]; then
+    i=0
+    for slaveInt in "${bondingInts[@]}"; do
+      ((i++))
+      printf "Slave 0$i:  $slaveInt"
+    done
+  fi
   printf "Management vLan ID: $mgmtVlan\n"
   printf "Management IP Address: $mgmtIp\n"
   printf "Management Subnet Mask: $mgmtSubnet\n"
