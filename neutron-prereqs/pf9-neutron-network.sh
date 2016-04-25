@@ -240,7 +240,7 @@ if [ $configNetworking == "y" ]; then
     echo 'mtuSize='$mtuSize >> $hostProfileScriptName
   fi
 fi
-tail -264 $0 >> $hostProfileScriptName
+tail -310 $0 >> $hostProfileScriptName
 
 
 
