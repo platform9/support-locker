@@ -87,7 +87,7 @@ function whichOS() {
 OS=$(whichOS)
 
 configNetworking=$(getValidInput "Would you like for this script to walk you through configuring networking? " "yesNo")
-
+bondingInts=()
 if [ $configNetworking == "y" ]; then
   phyInts=($(ls -l /sys/class/net/ | grep -i 'pci'  | awk -F' ' '{print $9}'))
 
@@ -111,7 +111,6 @@ if [ $configNetworking == "y" ]; then
           break
         fi  
       done
-      bondingInts=()
       while true; do
         n=0
         for i in "${phyInts[@]}"; do
