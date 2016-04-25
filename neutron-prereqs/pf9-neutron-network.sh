@@ -100,7 +100,7 @@ if [ $configNetworking == "y" ]; then
     if [ $configureBonding == "y" ]; then
       bondingModes=("0) balance-rr" "1) active-backup" "2) balance-xor" "3) broadcast" "4) 802.3ad" "5) balance-tlb" "6) balance-alb")
       while true; do
-        for i in "${phyInts[@]}"; do
+        for i in "${bondingModes[@]}"; do
           echo "$i"
         done
         read -p "Choose the bonding mode you would like to use: " pickBondingMode
