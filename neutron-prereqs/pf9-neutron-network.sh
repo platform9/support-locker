@@ -122,9 +122,10 @@ if [ $configNetworking == "y" ]; then
         if [ $pickPhyInt -gt ${#phyInts[@]} ] || [ $pickPhyInt -lt 1 ]; then
           printf "${RED}Invalid Input! Please pick an interface from the list.${NC}\n"
         else
-          bondingInts+=${phyInts[$pickPhyInt-1]}
-          phyInts=( "${phyInts[@]/${phyInts[$pickPhyInt-1]}}" )
-          printf "${GREEN}${phyInts[$pickPhyInt-1]} added to the bond!${NC}\n"
+          pickBondSlave=${phyInts[$pickPhyInt-1]}
+          bondingInts+=$pickBondSlave
+          phyInts=( "${phyInts[@]/$pickBondSlave}" )
+          printf "${GREEN}$pickBondSlave added to the bond!${NC}\n"
           if [ ${#bondingInts[@]} -gt 1 ] && [ ${#bondingInts[@]} -lt 4 ] && [ ${#phyInts[@]} != 0 ]; then
             addAnother=$(getValidInput "Would you like to add another interface? " "yesNo")
             if [ $addAnother == "n" ]; then
