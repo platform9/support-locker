@@ -124,7 +124,8 @@ if [ $configNetworking == "y" ]; then
         else
           pickBondSlave=${phyInts[$pickPhyInt-1]}
           bondingInts+=$pickBondSlave
-          phyInts=( "${phyInts[@]/$pickBondSlave}" )
+          # Bash magic to remove object from array
+          phyInts=($(for phyInt in ${phyInts[@]}; do [ "$phyInt" != "$pickBondSlave" ] && echo $phyInt; done ))
           printf "${GREEN}$pickBondSlave added to the bond!${NC}\n"
           if [ ${#bondingInts[@]} -gt 1 ] && [ ${#bondingInts[@]} -lt 4 ] && [ ${#phyInts[@]} != 0 ]; then
             addAnother=$(getValidInput "Would you like to add another interface? " "yesNo")
