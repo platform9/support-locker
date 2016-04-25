@@ -123,7 +123,7 @@ if [ $configNetworking == "y" ]; then
           printf "${RED}Invalid Input! Please pick an interface from the list.${NC}\n"
         else
           pickBondSlave=${phyInts[$pickPhyInt-1]}
-          bondingInts+=$pickBondSlave
+          bondingInts=("${bondingInts[@]}" $pickBondSlave)
           # Bash magic to remove object from array
           phyInts=($(for phyInt in ${phyInts[@]}; do [ "$phyInt" != "$pickBondSlave" ] && echo $phyInt; done ))
           printf "${GREEN}$pickBondSlave added to the bond!${NC}\n"
