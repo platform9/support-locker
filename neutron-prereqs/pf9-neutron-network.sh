@@ -127,6 +127,9 @@ if [ $configNetworking == "y" ]; then
           # Bash magic to remove object from array
           phyInts=($(for phyInt in ${phyInts[@]}; do [ "$phyInt" != "$pickBondSlave" ] && echo $phyInt; done ))
           printf "${GREEN}$pickBondSlave added to the bond!${NC}\n"
+          echo "Ints in Bond:  ${#bondingInts[@]}"
+          echo "Ints out of Bond:  ${#phyInts[@]}"
+
           if [ ${#bondingInts[@]} -gt 1 ] && [ ${#bondingInts[@]} -lt 4 ] && [ ${#phyInts[@]} != 0 ]; then
             addAnother=$(getValidInput "Would you like to add another interface? " "yesNo")
             if [ $addAnother == "n" ]; then
