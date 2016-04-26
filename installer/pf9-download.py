@@ -1,80 +1,226 @@
 #!/usr/bin/python2
 
 import base64
+import getpass
 import httplib
 import json
+import optparse
 import sys
-import zlib
+import urlparse
 
-def get_token_v2(url, username, password):
-    """
-    Returns OpenStack identity token using
-    Keystone v2 API
-    """
-    conn = httplib.HTTPSConnection(url)
-    headers = { "Content-type": "application/json" }
-    body = { "auth": {
-               "passwordCredentials": {
-                  "username": "{0}".format(username),
-                  "password": "{0}".format(password)
-               },
-               "tenantName": "service"
-             }
-           }
+
+def do_request(action, host, relative_url, headers, body):
+    conn = httplib.HTTPSConnection(host)
     body_json = json.JSONEncoder().encode(body)
-
-    conn.request("POST", "/keystone/v2.0/tokens", body_json, headers)
+    conn.request(action, relative_url, body_json, headers)
     response = conn.getresponse()
+    return conn, response
 
-    if response.status != 200:
-        print("{0}: {1}".format(response.status, response.reason))
-        exit(1)
 
-    body = json.loads(response.read())
-    return body['access']['token']['id']
+def download_report(bytes_so_far, total_size, installer_name):
+   percent = float(bytes_so_far) / total_size
+   percent = round(percent*100, 2)
+   sys.stdout.write("{0}: Downloaded {1} of {2} bytes {3:.2f}%\r".format(
+               installer_name, bytes_so_far, total_size, percent))
 
-def download_installer(url, token, installer_name):
-    conn = httplib.HTTPSConnection(url)
+   if bytes_so_far >= total_size:
+      sys.stdout.write('\n')
 
-    # We compress the token because most browsers have a
-    # max size of 4096 bytes per cookie and the Keystone
-    # token exceeds this. This is only implemented for the
-    # static file pipeline.
-    compressed_token = base64.b64encode(zlib.compress(token))
-    headers = { "X-Auth-Token": compressed_token }
+
+def download_installer(url, token, cookie, installer_name):
+    headers = { "X-Auth-Token": token,
+                "cookie": cookie}
     body = ""
 
-    conn.request("GET", "/private/{0}".format(installer_name), body, headers)
-    response = conn.getresponse()
+    _, net_location, path, _, _ = urlparse.urlsplit(url)
+    conn, response = do_request("GET", net_location, path, headers, body)
 
     if response.status != 200:
         print("{0}: {1}".format(response.status, response.reason))
         exit(1)
 
-    body = response.read()
+    total_size = int(response.getheader('Content-Length').strip())
+    bytes_read = 0
 
     # writes the file in the current working directory
-    with open(installer_name, 'w') as file:
-        file.write(body)
+    f = open(installer_name, 'w')
+
+    while True:
+        body = response.read(512 * 1024)
+        bytes_read += len(body)
+
+        if not body:
+            break
+
+        f.write(body)
+        download_report(bytes_read, total_size, installer_name)
+
+    f.close()
+    conn.close()
+
+
+def get_token_v3(host, username, password, tenant):
+    headers = { "Content-Type": "application/json" }
+    body = {
+        "auth":{
+            "identity": {
+                "methods": ["password"],
+                "password": {
+                    "user": {
+                        "name": username,
+                        "domain": {"id": "default"},
+                        "password": password
+                    }
+                }
+            },
+            "scope": {
+                "project": {
+                    "name": tenant,
+                    "domain": { "id": "default" }
+                }
+            }
+        }
+    }
+    conn, response = do_request("POST", host,
+            "/keystone/v3/auth/tokens?nocatalog",
+            headers, body)
+
+    if response.status not in (200, 201):
+        print("{0}: {1}".format(response.status, response.reason))
+        exit(1)
+
+    token = response.getheader('X-Subject-Token')
+    conn.close()
+    return token
+
+
+def get_package_info_from_token(host, token, region):
+
+    out = {}
+
+    headers = {
+            "Content-Type": "application/json",
+            "X-Auth-Token": token
+            }
+
+    conn, response = do_request("GET", host,
+            "/keystone_admin/v3/services?type=regionInfo", headers, {})
+    if response.status not in (200, 201):
+        print("{0}: {1}".format(response.status, response.reason))
+        exit(1)
+
+    response_body = json.loads(response.read())
+    service_id = response_body['services'][0]['id']
+    conn.close()
+
+    conn, response = do_request("GET", host,
+            "/keystone_admin/v3/endpoints?service_id={0}".format(service_id),
+            headers, {})
+    if response.status not in (200, 201):
+        print("{0}: {1}".format(response.status, response.reason))
+        exit(1)
+
+    response_body = json.loads(response.read())
+    for ep in response_body['endpoints']:
+        if ep['region'] == region:
+            if ep['interface'] == 'internal':
+                internal_url = ep['url']
+            elif ep['interface'] == 'public':
+                public_url = ep['url']
+    conn.close()
+
+    _, net_location, path, _, _ = urlparse.urlsplit(public_url)
+    conn, response = do_request("GET", net_location, path, headers, {})
+    if response.status not in (200, 201):
+        print("{0}: {1}".format(response.status, response.reason))
+        exit(1)
+
+    response_body = json.loads(response.read())
+    cookie_url = response_body['links']['token2cookie']
+    conn.close()
+
+    _, net_location, path, _, _ = urlparse.urlsplit(cookie_url)
+    conn, response = do_request("GET", net_location, path, headers, {})
+    if response.status not in (200, 201, 204):
+        print("{0}: {1}".format(response.status, response.reason))
+        exit(1)
+
+    cookie = response.getheader('set-cookie')
+    conn.close()
+
+    headers['cookie'] = cookie
+    _, net_location, path, _, _ = urlparse.urlsplit(internal_url)
+    conn, response = do_request("GET", net_location, path, headers, {})
+    if response.status not in (200, 201):
+        print("{0}: {1}".format(response.status, response.reason))
+        exit(1)
+
+    response_body = json.loads(response.read())
+    deb_installer = response_body['links']['deb_install']
+    rpm_installer = response_body['links']['rpm_install']
+    conn.close()
+
+    out = {
+            'cookie': cookie,
+            'internal_url': internal_url,
+            'public_url': public_url,
+            'deb_installer': deb_installer,
+            'rpm_installer': rpm_installer
+            }
+
+    return out
+
+
+def get_installer(options):
+    token = get_token_v3(options.endpoint, options.user,
+                         options.pw, options.tenant)
+
+    info = get_package_info_from_token(options.endpoint, token, options.region)
+    if options.platform == 'debian':
+       package_url = info['deb_installer']
+    elif options.platform == 'redhat':
+       package_url = info['rpm_installer']
+
+    installer_name = package_url.rsplit('/', 1)[1]
+    download_installer(package_url, 'token', info['cookie'], installer_name)
+
+
+def validate_password(options):
+    if not options.pw:
+        options.pw = getpass.getpass()
+
 
 def main():
-    if len(sys.argv) != 5:
-        print("A simple utility to download Platform9 installers")
-        print("usage: python " + sys.argv[0] + "  <platform9_url> <username> <password> <redhat|debian>\n")
-        print("redhat        | RHEL/CentOS/Scientific Linux >= 6.6 ")
-        print("debian        | Ubuntu 12.04 or Ubuntu 14.04\n")
-        exit(1)
+    parser = optparse.OptionParser(usage="%prog --account_endpoint <endpoint> "
+            "--region <region> --user <user> [--password <password>] [--tenant "
+            "<tenant>] --platform <redhat|debian>")
+    parser.add_option('--account_endpoint', dest="endpoint", action="store",
+            help="Account endpoint for the customer. Example: acme.platform9.net")
+    parser.add_option('--region', dest="region", action="store",
+            help="Region from where the installer needs to be downloaded")
+    parser.add_option('--user', dest="user", action="store",
+            help="Platform9 user account to use to retrieve the installer")
+    parser.add_option('--password', dest="pw", action="store", default=None,
+            help="User account password. Will be prompted, if not provided "
+            "during script invocation")
+    parser.add_option('--tenant', dest="tenant", action="store",
+            default="service", help="Tenant to use for the user account. "
+            "Defaults to 'service' tenant")
+    parser.add_option('--platform', dest="platform", action="store",
+            help="Installer platform. Allowed options are redhat or debian.",
+            type='choice', choices=['redhat', 'debian'])
 
-    if sys.argv[4] == "redhat":
-        package = "platform9-install-redhat.sh"
-    elif sys.argv[4] == "debian":
-        package = "platform9-install-debian.sh"
-    else:
-        print(sys.argv[4] + " is an unknown option")
-        exit(1)
+    options, remainder = parser.parse_args()
+    if not (options.endpoint and options.region and
+            options.user and options.tenant):
+        print "ERROR: Missing arguments"
+        parser.print_usage()
+        sys.exit(1)
 
-    token = get_token_v2(sys.argv[1], sys.argv[2], sys.argv[3])
-    download_installer(sys.argv[1], token, package)
+    validate_password(options)
+
+    get_installer(options)
+
 
 if __name__ == "__main__":
     main()
