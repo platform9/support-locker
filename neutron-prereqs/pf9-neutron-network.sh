@@ -84,6 +84,20 @@ function whichOS() {
   fi
 }
 
+function printBanner() {
+  printf '\033[1;34m       __________\033[0m.__          __    _____                    \033[1;34m________         \n' >&2
+  printf '\033[1;34m       \______   \\\033[0m  | _____ _/  |__/ ____\___________  _____\033[1;34m/   __   \        \n' >&2
+  printf '\033[1;34m        |     ___/\033[0m  | \__  \\\   __\   __\/  _ \_  __ \/     \033[1;34m\____    /        \n' >&2
+  printf '\033[1;34m        |    |\033[0m   |  |__/ __ \|  |  |  | (  <_> )  | \/  Y Y  \\\033[1;34m /    /         \n' >&2
+  printf '\033[1;34m        |____|\033[0m   |____(______/__|  |__|  \____/|__|  |__|_|__/\033[1;34m/____/          \n' >&2
+  printf '\033[1;34m _______\033[0m          __                       __     \033[1;34m___________\033[0m           .__   \n' >&2
+  printf '\033[1;34m \      \\\033[0m   _____/  |___  _  _____________|  | __ \033[1;34m\__    ___/\033[0m___   ____ |  |  \n' >&2
+  printf '\033[1;34m /   |   \\\033[0m / __ \   __\ \/ \/ /  _ \_  __ \  |/ / \033[1;34m  |    |\033[0m /  _ \ /  _ \|  |  \n' >&2
+  printf '\033[1;34m/    |    \\\033[0m  ___/|  |  \     (  <_> )  | \/    <  \033[1;34m  |    |\033[0m(  <_> |  <_> )  |__\n' >&2
+  printf '\033[1;34m\____|____/\033[0m\_____>__|   \/\_/ \____/|__|  |__|__\  \033[1;34m |____|\033[0m \____/ \____/|____/\n' >&2
+}
+$(printBanner)
+
 OS=$(whichOS)
 
 configNetworking=$(getValidInput "Would you like for this script to walk you through configuring networking? " "yesNo")
@@ -196,8 +210,8 @@ if [ $configNetworking == "y" ]; then
   printf "${CYAN}"
   printf "Physical Interface: $phyInt\n"
   if [ "$configureBonding" == "y" ]; then
-    printf "Configure Bonding? $configureBonding"
-    printf "Bonding Mode: $bondingMode"
+    printf "Configure Bonding? $configureBonding\n"
+    printf "Bonding Mode: $bondingMode\n"
     i=0
     for slaveInt in "${bondingInts[@]}"; do
       ((i++))
@@ -230,7 +244,7 @@ fi
 
 hostProfileScriptName='./hostProfile.sh'
 
-head -90 $0 > $hostProfileScriptName 
+head -88 $0 > $hostProfileScriptName 
 echo 'configNetworking='$configNetworking >> hostProfileScriptName
 if [ $configNetworking == "y" ]; then
   echo 'phyInt='$phyInt >> $hostProfileScriptName
