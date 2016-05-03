@@ -42,7 +42,7 @@ function getValidInput() {
   while true; do
     read -p "$1" getInput
     if [ "$2" == "vlan" ]; then
-      errMessage="Please enter a valid vLan between 1-4095!"
+      errMessage="Please enter a valid VLAN between 1-4095!"
       checkValid=$(validVlan $getInput)
     elif [ "$2" == "ipAddress" ]; then
       errMessage="Please enter a valid IP Address!"
@@ -51,9 +51,9 @@ function getValidInput() {
       errMessage="Please enter a valid Subnet Mask!"
       checkValid=$(validNetMask $getInput)
     elif [ "$2" == "yesNo" ]; then
-      getInput=`echo ${getInput:0:1} | awk '{print tolower($0)}'`
-      errMessage="Please answer yes or no!"
-      checkValid=$(validYesNo $getInput)
+      getInput=$(echo ${getInput:0:1} | awk '{ print tolower($0) }')
+      errMessage="Please answer yes or no."
+      validYesNo $getInput
     elif [ "$2" == "mtu" ]; then
       errMessage="Please enter a valid MTU between 1600-9000!"
       checkValid=$(validMtu $getInput)
@@ -65,7 +65,7 @@ function getValidInput() {
     if [ "$checkValid" == "Valid" ]; then
      break
     else
-     printf "${RED}Invalid Input! $errMessage${NC}\n" >&2
+     printf "${RED}Invalid Input. $errMessage${NC}\n" >&2
     fi
   done
   echo $getInput
@@ -191,7 +191,7 @@ if [ $configNetworking == "y" ]; then
   printf "${GREEN}Using Interface: $phyInt${NC}\n"
 
   # Management Interface Variables
-  mgmtVlan=$(getValidInput "Management vLan ID: " "vlan")
+  mgmtVlan=$(getValidInput "Management VLAN ID: " "vlan")
   mgmtIp=$(getValidInput "Management IP Address: " "ipAddress")
   mgmtSubnet=$(getValidInput "Management Subnet Mask: " "netMask")
   mgmtGateway=$(getValidInput "Management Gateway: " "ipAddress")
@@ -200,25 +200,25 @@ if [ $configNetworking == "y" ]; then
   mgmtSearchDomain=$(getValidInput "DNS Search Domain: " "freeText")
 
   # External Interface Variables
-  extVlan=$(getValidInput "External vLan ID: " "vlan")
+  extVlan=$(getValidInput "External VLAN ID: " "vlan")
 
-  # vxLan or GRE?
-  tunnelTrue=$(getValidInput "Do you plan on using vxLan or GRE tunneling? " "yesNo")
+  # VXLAN or GRE?
+  tunnelTrue=$(getValidInput "Do you plan on using VXLAN or GRE tunneling? " "yesNo")
 
-  # VXLan Variables
+  # VXLAN Variables
   if [ "$tunnelTrue" == "y" ]; then
-    seperateTunnel=$(getValidInput "Are you using a separate vlan for tunneling? " "yesNo")
+    seperateTunnel=$(getValidInput "Are you using a separate VLAN for tunneling? " "yesNo")
     printf "${YELLOW} ### Ensure your switches are configured to handle this MTU ###${NC}\n"
     mtuSize=$(getValidInput "Tunneling requires a minimum MTU of 1600. Please choose an MTU size between 1600-9000: " "mtu")
   fi
 
   if [ "$seperateTunnel" == "y" ]; then
-    tunnelVlanId=$(getValidInput "Tunnel Lan ID: " "vlan")
+    tunnelVlanId=$(getValidInput "Tunnel VLAN ID: " "vlan")
     tunnelIp=$(getValidInput "Tunnel IP Address: " "ipAddress")
     tunnelSubnet=$(getValidInput "Tunnel Subnet Mask: " "netMask")
   fi
 
-  vlanTrue=$(getValidInput "Are you using vLan segmentation? Or planning to have provider networks?" "yesNo")
+  vlanTrue=$(getValidInput "Are you using VLAN segmentation? Or planning to have provider networks? " "yesNo")
 
   printf "${GREEN}You have cooperated nicely by answering the questions asked of you!${NC}\n\n"
   printf "${CYAN}"
@@ -232,22 +232,22 @@ if [ $configNetworking == "y" ]; then
       printf "Slave 0$i:  $slaveInt\n"
     done
   fi
-  printf "Management vLan ID: $mgmtVlan\n"
+  printf "Management VLAN ID: $mgmtVlan\n"
   printf "Management IP Address: $mgmtIp\n"
   printf "Management Subnet Mask: $mgmtSubnet\n"
   printf "Management Gateway: $mgmtGateway\n"
   printf "DNS Server 1: $mgmtDns1\n"
   printf "DNS Server 2: $mgmtDns2\n"
   printf "DNS Search Domain: $mgmtSearchDomain\n"
-  printf "External vLan ID: $extVlan\n"
-  printf "Are you using a separate vlan for tunneling? $tunnelTrue\n"
+  printf "External VLAN ID: $extVlan\n"
+  printf "Are you using a separate VLAN for tunneling? $tunnelTrue\n"
   if [ "$tunnelTrue" == "y" ]; then
-    printf "Tunnel Lan ID: $tunnelVlanId\n"
+    printf "Tunnel VLAN ID: $tunnelVlanId\n"
     printf "Tunnel IP Address: $tunnelIp\n"
     printf "Tunnel Subnet Mask: $tunnelSubnet\n"
     printf "Please choose an MTU size between 1600-9000: $mtuSize\n"
   fi
-  printf "Are you using vLan segmentation? $vlanTrue\n"
+  printf "Are you using VLAN segmentation? $vlanTrue\n"
   printf "${NC}\n"
   finalAnswer=$(getValidInput "Are these your final answers?! " "yesNo")
   if [ "$finalAnswer" == "n" ]; then
@@ -283,6 +283,7 @@ if [ $configNetworking == "y" ]; then
 fi
 tail -310 $0 >> $hostProfileScriptName
 
+echo "Installing Neutron prerequisites..."
 
 if [ $OS == 'Enterprise Linux' ]; then
 
@@ -292,11 +293,11 @@ if [ $OS == 'Enterprise Linux' ]; then
   setenforce 0
 
   # Disable firewalld
-  printf "\n${RED}!!! We are setting disabling FIREWALLD !!!\n!!! Neutron and KVM will use IPTABLES directly !!!${NC}\n"
+  printf "\n${RED}!!! We are disabling FIREWALLD !!!\n!!! Neutron and KVM will use IPTABLES directly !!!${NC}\n"
   systemctl disable firewalld
   systemctl stop firewalld
 
-  # Load modules needed for neutron
+  # Load modules needed for Neutron
   modprobe bridge
   modprobe 8021q
   modprobe bonding
@@ -314,7 +315,7 @@ if [ $OS == 'Enterprise Linux' ]; then
   # Add PF9 Yum Repo
   yum -q -y install https://s3-us-west-1.amazonaws.com/platform9-neutron/noarch/platform9-neutron-repo-1-0.noarch.rpm
 
-  # Install openvswitch
+  # Install Open vSwitch
   yum -q -y install --disablerepo="*" --enablerepo="platform9-neutron-el7-repo" openvswitch
 
   # Enable and start the openvswitch service
@@ -356,8 +357,8 @@ if [ $OS == 'Enterprise Linux' ]; then
     echo VLAN=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
     echo DEVICETYPE=ovs >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
     echo OVS_BRIDGE=br-ext >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
-    ## Slave Physical Interface to vLan Bridge
 
+    ## Slave Physical Interface to VLAN Bridge
     echo DEVICE=$phyInt > /etc/sysconfig/network-scripts/ifcfg-$phyInt
     echo BOOTPROTO=none >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
     echo ONBOOT=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
@@ -380,7 +381,7 @@ if [ $OS == 'Enterprise Linux' ]; then
     fi
 
     if [ "$vlanTrue" == "y" ]; then
-      ## Setup Bridge for vLan Trunk
+      ## Setup Bridge for VLAN Trunk
       echo DEVICE=br-vlan > /etc/sysconfig/network-scripts/ifcfg-br-vlan
       echo BOOTPROTO=none >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
       echo ONBOOT=yes >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
@@ -404,46 +405,46 @@ if [ $OS == 'Enterprise Linux' ]; then
       echo MTU=$mtuSize >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
     fi
 
-    printf "\n\n${GREEN}Network config complete!${NC}\n"
-    printf "${YELLOW}Please review the following config files:${NC}\n\n\n"
+    printf "\n${GREEN}Network config complete!${NC}"
+    printf "\n${YELLOW}Please review the following config files:${NC}\n"
 
-    printf "${GREEN}Management Interface:  /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan${NC}\n\n"
+    printf "\n${GREEN}Management Interface: /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan${NC}\n"
     printf "${YELLOW}"
     cat /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
-    printf "${NC}\n\n\n"
+    printf "${NC}"
 
-    printf "${GREEN}External Bridge:  /etc/sysconfig/network-scripts/ifcfg-br-ext${NC}\n\n"
+    printf "\n${GREEN}External Bridge: /etc/sysconfig/network-scripts/ifcfg-br-ext${NC}\n"
     printf "${YELLOW}"
     cat /etc/sysconfig/network-scripts/ifcfg-br-ext
-    printf "${NC}\n\n\n"
+    printf "${NC}"
 
-    printf "\n\n${GREEN}External Interface:  /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan${NC}\n\n"
+    printf "\n${GREEN}External Interface: /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan${NC}\n"
     printf "${YELLOW}"
     cat /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
-    printf "${NC}\n\n\n"
+    printf "${NC}"
 
     if [ "$vlanTrue" == "y" ]; then
-      printf "${GREEN}Lan Bridge: /etc/sysconfig/network-scripts/ifcfg-br-vlan${NC}\n\n"
+      printf "\n${GREEN}LAN Bridge: /etc/sysconfig/network-scripts/ifcfg-br-vlan${NC}\n"
       printf "${YELLOW}"
       cat /etc/sysconfig/network-scripts/ifcfg-br-vlan
-      printf "${NC}\n\n\n"
+      printf "${NC}"
     fi
 
     if [ "$vxlanTrue" == "y" ]; then
-      printf "${GREEN}VXLan Interface:  /etc/sysconfig/network-scripts/ifcfg-$phyInt.$vxlanVlan${NC}\n\n"
+      printf "\n${GREEN}VXLAN Interface: /etc/sysconfig/network-scripts/ifcfg-$phyInt.$vxlanVlan${NC}\n"
       printf "${YELLOW}"
       cat /etc/sysconfig/network-scripts/ifcfg-$phyInt.$vxlanVlan
-      printf "${NC}\n\n\n"
+      printf "${NC}"
     fi
 
-    printf "${RED}"
+    printf "${RED}\n"
     read -p "!!! Only if all of the above look correct, type yes to restart networking !!! " yn
     printf "${NC}"
     case $yn in
       [Yy]* ) systemctl restart network.service;;
     esac
   fi
-  printf "\n\n${GREEN}DONE!!!${NC}\n"
+  printf "\n${GREEN}DONE!!!${NC}\n"
 elif [ $OS == 'Ubuntu' ]; then
   # Install the VLAN package
   apt-get -y -q=2 install vlan ifenslave
@@ -468,18 +469,19 @@ elif [ $OS == 'Ubuntu' ]; then
   # Reload sysctl
   sysctl -q -p
 
-  # Add PF9 Apt Source
+  # Add PF9 APT source repository
   echo 'deb http://platform9-neutron.s3-website-us-west-1.amazonaws.com ubuntu/' > /etc/apt/sources.list.d/platform9-neutron-ubuntu.list
 
   # Update APT Source
   apt-get update -q=2
 
-  # Install openvswitch
+  # Install Open vSwitch
   apt-get -y --force-yes -q=2 install openvswitch-switch
 
   if [ $configNetworking == "y" ]; then
     # Backup old interfaces file
     cp /etc/network/interfaces ~/
+
     # Create interfaces header
     echo "# This file describes the network interfaces available on your system" > /etc/network/interfaces
     echo "# and how to activate them. For more information, see interfaces(5)." >> /etc/network/interfaces
@@ -571,13 +573,13 @@ elif [ $OS == 'Ubuntu' ]; then
       done
     fi
 
-    printf "\n\n${GREEN}Network config complete!${NC}\n"
-    printf "${YELLOW}Please review the following config file:${NC}\n\n\n"
+    printf "\n${GREEN}Network config complete!${NC}"
+    printf "\n${YELLOW}Please review the following config file:${NC}"
 
-    printf "${GREEN}Interfaces File:  /etc/network/interfaces${NC}\n\n"
+    printf "\n${GREEN}Interfaces File: /etc/network/interfaces${NC}\n"
     printf "${YELLOW}"
     cat /etc/network/interfaces
-    printf "${NC}\n\n\n"
+    printf "${NC}\n\n"
 
     printf "${RED}"
     read -p "!!! Only if all of the above looks correct, type yes to reboot your host !!! " yn
@@ -586,7 +588,7 @@ elif [ $OS == 'Ubuntu' ]; then
       [Yy]* ) reboot;;
     esac
   fi
-  printf "\n\n${GREEN}DONE!!!${NC}\n"
+  printf "\n${GREEN}DONE!!!${NC}\n"
 else
   printf "${RED}!!! Somehow we lost which operating system you are using !!!${NC}\n"
   printf "${RED}!!! Ending Script !!!${NC}\n"
