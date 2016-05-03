@@ -13,6 +13,11 @@ function validVlan() {
   grep -E -q '^([1-9]|[1-9][0-9]|[1-9][0-9][0-9]|[1-3][0-9][0-9][0-9]|40[0-9][0-5])$' <<< "$1" && echo "Valid" || echo "Invalid"
 }
 
+# Validate input is an integer
+function validInt() {
+  [[ $1 =~ ^-?[0-9]+$ ]]
+}
+
 function validIp() {
   grep -E -q '^(25[0-4]|2[0-4][0-9]|1[0-9][0-9]|[1]?[1-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)' <<< "$1" && echo "Valid" || echo "Invalid"
 }
@@ -118,7 +123,10 @@ if [ $configNetworking == "y" ]; then
           echo "$i"
         done
         read -p "Choose the bonding mode you would like to use: " pickBondingMode
-        if [ $pickBondingMode -gt 6 ] || [ $pickBondingMode -lt 0 ]; then
+
+        validInt $pickBondingMode
+
+        if [ $? -ne 0 ] || [ $pickBondingMode -gt 6 ] || [ $pickBondingMode -lt 0 ]; then
           printf "${RED}Invalid Input! Please pick a bonding mode from the list.${NC}\n"
         else
           bondingMode=$pickBondingMode
@@ -132,7 +140,10 @@ if [ $configNetworking == "y" ]; then
           echo "$n) $i"
         done
         read -p "Pick a physical interface to add to the bond: " pickPhyInt
-        if [ $pickPhyInt -gt ${#phyInts[@]} ] || [ $pickPhyInt -lt 1 ]; then
+
+        validInt $pickPhyInt
+
+        if [ $? -ne 0 ] || [ $pickPhyInt -gt ${#phyInts[@]} ] || [ $pickPhyInt -lt 1 ]; then
           printf "${RED}Invalid Input! Please pick an interface from the list.${NC}\n"
         else
           pickBondSlave=${phyInts[$pickPhyInt-1]}
@@ -164,8 +175,12 @@ if [ $configNetworking == "y" ]; then
           ((n++))
           echo "$n) $i"
         done
-        read -p "Pick the physical interface from the list: " pickPhyInt
-        if [ $pickPhyInt -gt ${#phyInts[@]} ] || [ $pickPhyInt -lt 1 ]; then
+        read -p "Select host management interface #: " pickPhyInt
+
+        # Validate input
+        validInt $pickPhyInt
+
+        if [[ ! $? -eq 0 ]] || [[ $pickPhyInt -gt ${#phyInts[@]} ]] || [[ $pickPhyInt -lt 1 ]]; then
           printf "${RED}Invalid Input! Please pick an interface from the list.${NC}\n"
         else
           phyInt=${phyInts[$pickPhyInt-1]}
