@@ -123,12 +123,12 @@ if [ $configNetworking == "y" ]; then
         else
           bondingMode=$pickBondingMode
           break
-        fi  
+        fi
       done
       while true; do
         n=0
         for i in "${phyInts[@]}"; do
-          ((n++)) 
+          ((n++))
           echo "$n) $i"
         done
         read -p "Pick a physical interface to add to the bond: " pickPhyInt
@@ -161,7 +161,7 @@ if [ $configNetworking == "y" ]; then
       while true; do
         n=0
         for i in "${phyInts[@]}"; do
-          ((n++)) 
+          ((n++))
           echo "$n) $i"
         done
         read -p "Pick the physical interface from the list: " pickPhyInt
@@ -170,7 +170,7 @@ if [ $configNetworking == "y" ]; then
         else
           phyInt=${phyInts[$pickPhyInt-1]}
           break
-        fi  
+        fi
       done
     fi
   fi
@@ -192,7 +192,7 @@ if [ $configNetworking == "y" ]; then
   tunnelTrue=$(getValidInput "Do you plan on using vxLan or GRE tunneling? " "yesNo")
 
   # VXLan Variables
-  if [ "$tunnelTrue" == "y" ]; then  
+  if [ "$tunnelTrue" == "y" ]; then
     seperateTunnel=$(getValidInput "Are you using a separate vlan for tunneling? " "yesNo")
     printf "${YELLOW} ### Ensure your switches are configured to handle this MTU ###${NC}\n"
     mtuSize=$(getValidInput "Tunneling requires a minimum MTU of 1600. Please choose an MTU size between 1600-9000: " "mtu")
@@ -236,7 +236,7 @@ if [ $configNetworking == "y" ]; then
   printf "Are you using vLan segmentation? $vlanTrue\n"
   printf "${NC}\n"
   finalAnswer=$(getValidInput "Are these your final answers?! " "yesNo")
-  if [ "$finalAnswer" == "n" ]; then 
+  if [ "$finalAnswer" == "n" ]; then
     printf "\n${RED}!!! We are aborting, No changes have been made !!!${NC}\n"
     exit
   fi
@@ -244,8 +244,8 @@ fi
 
 hostProfileScriptName='./hostProfile.sh'
 
-head -88 $0 > $hostProfileScriptName 
-echo 'configNetworking='$configNetworking >> hostProfileScriptName
+head -88 $0 > $hostProfileScriptName
+echo "configNetworking=${configNetworking}" >> $hostProfileScriptName
 if [ $configNetworking == "y" ]; then
   echo 'phyInt='$phyInt >> $hostProfileScriptName
   echo 'mgmtIp=$(getValidInput "Management IP Address: " "ipAddress")' >> $hostProfileScriptName
@@ -263,14 +263,11 @@ if [ $configNetworking == "y" ]; then
     echo 'tunnelVlanId='$tunnelVlanId >> $hostProfileScriptName
     echo 'tunnelSubnet='$tunnelSubnet >> $hostProfileScriptName
   fi
-  if [ "$tunnelTrue" == "y" ]; then 
+  if [ "$tunnelTrue" == "y" ]; then
     echo 'mtuSize='$mtuSize >> $hostProfileScriptName
   fi
 fi
 tail -310 $0 >> $hostProfileScriptName
-
-
-
 
 
 if [ $OS == 'Enterprise Linux' ]; then
@@ -345,17 +342,17 @@ if [ $OS == 'Enterprise Linux' ]; then
     echo VLAN=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
     echo DEVICETYPE=ovs >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
     echo OVS_BRIDGE=br-ext >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
-    
     ## Slave Physical Interface to vLan Bridge
+
     echo DEVICE=$phyInt > /etc/sysconfig/network-scripts/ifcfg-$phyInt
     echo BOOTPROTO=none >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
     echo ONBOOT=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
 
-    
+
     if [ "$configureBonding" == "y" ]; then
       echo BONDING_MASTER=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInts
       echo 'BONDING_OPTS="mode='$bondingMode'"' >> /etc/sysconfig/network-scripts/ifcfg-$phyInts
-      if [ "$vlanTrue" != "y" ]; then 
+      if [ "$vlanTrue" != "y" ]; then
         echo TYPE=Bond >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
       fi
       for slaveInt in "${bondingInts[@]}"; do
@@ -367,7 +364,7 @@ if [ $OS == 'Enterprise Linux' ]; then
         echo SLAVE=yes >> /etc/sysconfig/network-scripts/ifcfg-$slaveInt
       done
     fi
-    
+
     if [ "$vlanTrue" == "y" ]; then
       ## Setup Bridge for vLan Trunk
       echo DEVICE=br-vlan > /etc/sysconfig/network-scripts/ifcfg-br-vlan
@@ -375,7 +372,7 @@ if [ $OS == 'Enterprise Linux' ]; then
       echo ONBOOT=yes >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
       echo TYPE=OVSBridge >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
       echo DEVICETYPE=ovs >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
-      
+
       echo OVS_BRIDGE=br-vlan >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
       echo TYPE=OVSPort >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
       echo DEVICETYPE=ovs >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
@@ -441,7 +438,7 @@ elif [ $OS == 'Ubuntu' ]; then
   modprobe br_netfilter
   modprobe 8021q
   modprobe bonding
-  
+
   # Make modules persistent
   echo br_netfilter >> /etc/modules
   echo 8021q >> /etc/modules
@@ -465,7 +462,7 @@ elif [ $OS == 'Ubuntu' ]; then
 
   # Install openvswitch
   apt-get -y --force-yes install openvswitch-switch
-  
+
   if [ $configNetworking == "y" ]; then
     # Backup old interfaces file
     cp /etc/network/interfaces ~/
@@ -477,7 +474,7 @@ elif [ $OS == 'Ubuntu' ]; then
     echo "auto lo" >> /etc/network/interfaces
     echo "iface lo inet loopback" >> /etc/network/interfaces
     echo "" >> /etc/network/interfaces
-    
+
     # Define Sub-Interface interface for Management
     echo "# Management Sub-Interface" >> /etc/network/interfaces
     echo "auto $phyInt.$mgmtVlan"  >> /etc/network/interfaces
@@ -517,7 +514,7 @@ elif [ $OS == 'Ubuntu' ]; then
     echo "  ovs_type OVSBridge" >> /etc/network/interfaces
     echo "  ovs_ports $phyInt.$extVlan" >> /etc/network/interfaces
     echo "" >> /etc/network/interfaces
-    
+
     ## Create sub-interface for external network
     echo "# External Sub-Interface" >> /etc/network/interfaces
     echo "allow-br-ext $phyInt.$extVlan"  >> /etc/network/interfaces
@@ -525,8 +522,7 @@ elif [ $OS == 'Ubuntu' ]; then
     echo "  ovs_type OVSPort" >> /etc/network/interfaces
     echo "  ovs_bridge br-ext" >> /etc/network/interfaces
     echo "" >> /etc/network/interfaces
-    
-    if [ "$vlanTrue" == "y" ]; then 
+    if [ "$vlanTrue" == "y" ]; then
       # Setup vLan Trunk for provider and tenant networks.
       echo "# vLan Bridge" >> /etc/network/interfaces
       echo "allow-ovs br-vlan" >> /etc/network/interfaces
@@ -535,6 +531,8 @@ elif [ $OS == 'Ubuntu' ]; then
       echo "  ovs_ports $phyInt" >> /etc/network/interfaces
       echo "" >> /etc/network/interfaces
       ## Setup Bridge for vLan Trunk
+
+
       echo "# Physical Interface" >> /etc/network/interfaces
       echo "allow-br-vlan $phyInt" >> /etc/network/interfaces
       echo "iface $phyInt inet manual" >> /etc/network/interfaces
