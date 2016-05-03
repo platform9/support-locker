@@ -71,10 +71,9 @@ function getValidInput() {
   echo $getInput
 }
 
+# Add line to file if it does not exist
 function putLineInFile() {
-  if grep -Fxq "$1" $2; then
-    printf "${CYAN}'$2' ${GREEN}already contains${CYAN} '$1'${NC}\n" >&2
-  else
+  if ! grep -Fxq "$1" $2; then
     echo "$1" >> $2
   fi
 }
@@ -310,13 +309,13 @@ if [ $OS == 'Enterprise Linux' ]; then
   putLineInFile 'net.ipv4.ip_forward=1' '/etc/sysctl.conf'
 
   # Reload sysctl
-  sysctl -p
+  sysctl -q -p
 
   # Add PF9 Yum Repo
-  yum -y install https://s3-us-west-1.amazonaws.com/platform9-neutron/noarch/platform9-neutron-repo-1-0.noarch.rpm
+  yum -q -y install https://s3-us-west-1.amazonaws.com/platform9-neutron/noarch/platform9-neutron-repo-1-0.noarch.rpm
 
   # Install openvswitch
-  yum -y install --disablerepo="*" --enablerepo="platform9-neutron-el7-repo" openvswitch
+  yum -q -y install --disablerepo="*" --enablerepo="platform9-neutron-el7-repo" openvswitch
 
   # Enable and start the openvswitch service
   systemctl enable openvswitch
@@ -446,8 +445,8 @@ if [ $OS == 'Enterprise Linux' ]; then
   fi
   printf "\n\n${GREEN}DONE!!!${NC}\n"
 elif [ $OS == 'Ubuntu' ]; then
-  # Install the vLan package
-  apt-get -y install vlan ifenslave
+  # Install the VLAN package
+  apt-get -y -q=2 install vlan ifenslave
 
   # Add required modules
   modprobe br_netfilter
@@ -467,16 +466,16 @@ elif [ $OS == 'Ubuntu' ]; then
   putLineInFile 'net.ipv4.ip_forward=1' '/etc/sysctl.conf'
 
   # Reload sysctl
-  sysctl -p
+  sysctl -q -p
 
   # Add PF9 Apt Source
   echo 'deb http://platform9-neutron.s3-website-us-west-1.amazonaws.com ubuntu/' > /etc/apt/sources.list.d/platform9-neutron-ubuntu.list
 
-  # Update Apt Source
-  apt-get update
+  # Update APT Source
+  apt-get update -q=2
 
   # Install openvswitch
-  apt-get -y --force-yes install openvswitch-switch
+  apt-get -y --force-yes -q=2 install openvswitch-switch
 
   if [ $configNetworking == "y" ]; then
     # Backup old interfaces file
