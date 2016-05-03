@@ -107,7 +107,7 @@ OS=$(whichOS)
 configNetworking=$(getValidInput "Would you like for this script to walk you through configuring networking? " "yesNo")
 bondingInts=()
 if [ $configNetworking == "y" ]; then
-  phyInts=($(ls -l /sys/class/net/ | grep -i 'pci'  | awk -F' ' '{print $9}'))
+  phyInts=($(ls -l /sys/class/net/ | grep -i 'pci'  | awk '{print $9}'))
 
   if [ ${#phyInts[@]} -eq 1 ]; then
     phyInt=${phyInts[0]}
