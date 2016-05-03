@@ -523,13 +523,6 @@ elif [ $OS == 'Ubuntu' ]; then
       echo "" >> /etc/network/interfaces
     fi
     # Setup External Network
-    ## Create External Bridge
-    echo "# External Bridge" >> /etc/network/interfaces
-    echo "allow-ovs br-ext" >> /etc/network/interfaces
-    echo "iface br-ext inet manual" >> /etc/network/interfaces
-    echo "  ovs_type OVSBridge" >> /etc/network/interfaces
-    echo "  ovs_ports $phyInt.$extVlan" >> /etc/network/interfaces
-    echo "" >> /etc/network/interfaces
 
     ## Create sub-interface for external network
     echo "# External Sub-Interface" >> /etc/network/interfaces
@@ -538,22 +531,29 @@ elif [ $OS == 'Ubuntu' ]; then
     echo "  ovs_type OVSPort" >> /etc/network/interfaces
     echo "  ovs_bridge br-ext" >> /etc/network/interfaces
     echo "" >> /etc/network/interfaces
+
+    ## Create External Bridge
+    echo "# External Bridge" >> /etc/network/interfaces
+    echo "allow-ovs br-ext" >> /etc/network/interfaces
+    echo "iface br-ext inet manual" >> /etc/network/interfaces
+    echo "  ovs_type OVSBridge" >> /etc/network/interfaces
+    echo "  ovs_ports $phyInt.$extVlan" >> /etc/network/interfaces
+    echo "" >> /etc/network/interfaces
+
     if [ "$vlanTrue" == "y" ]; then
-      # Setup vLan Trunk for provider and tenant networks.
-      echo "# vLan Bridge" >> /etc/network/interfaces
-      echo "allow-ovs br-vlan" >> /etc/network/interfaces
-      echo "iface br-vlan inet manual" >> /etc/network/interfaces
-      echo "  ovs_type OVSBridge" >> /etc/network/interfaces
-      echo "  ovs_ports $phyInt" >> /etc/network/interfaces
-      echo "" >> /etc/network/interfaces
-      ## Setup Bridge for vLan Trunk
-
-
+      ## Setup Bridge for VLAN Trunk
       echo "# Physical Interface" >> /etc/network/interfaces
       echo "allow-br-vlan $phyInt" >> /etc/network/interfaces
       echo "iface $phyInt inet manual" >> /etc/network/interfaces
       echo "  ovs_bridge br-vlan" >> /etc/network/interfaces
       echo "  ovs_type OVSPort" >> /etc/network/interfaces
+      # Setup VLAN Trunk for provider and tenant networks.
+      echo "# VLAN Bridge" >> /etc/network/interfaces
+      echo "allow-ovs br-vlan" >> /etc/network/interfaces
+      echo "iface br-vlan inet manual" >> /etc/network/interfaces
+      echo "  ovs_type OVSBridge" >> /etc/network/interfaces
+      echo "  ovs_ports $phyInt" >> /etc/network/interfaces
+      echo "" >> /etc/network/interfaces
     else
       # Setup Physical Interface
       echo "# Physical Interface" >> /etc/network/interfaces
