@@ -544,17 +544,17 @@ elif [ $OS == 'Ubuntu' ]; then
       echo "auto $phyInt" >> /etc/network/interfaces
       echo "iface $phyInt inet manual" >> /etc/network/interfaces
     fi
-      if [ "$configureBonding" == "y" ]; then
-        echo "  bond-mode $bondingMode" >> /etc/network/interfaces
+
+    if [ "$configureBonding" == "y" ]; then
+      echo "  bond-mode $bondingMode" >> /etc/network/interfaces
+      echo "" >> /etc/network/interfaces
+      for slaveInt in "${bondingInts[@]}"; do
+        echo "# Slaving $slaveInt to Master $phyInt" >> /etc/network/interfaces
+        echo "auto $slaveInt" >> /etc/network/interfaces
+        echo "iface $slaveInt inet manual" >> /etc/network/interfaces
+        echo "  bond-master $phyInt" >> /etc/network/interfaces
         echo "" >> /etc/network/interfaces
-        for slaveInt in "${bondingInts[@]}"; do
-          echo "# Slaving $slaveInt to Master $phyInt" >> /etc/network/interfaces
-          echo "auto $slaveInt" >> /etc/network/interfaces
-          echo "iface $slaveInt inet manual" >> /etc/network/interfaces
-          echo "  bond-master $phyInt" >> /etc/network/interfaces
-          echo "" >> /etc/network/interfaces
-        done
-      fi
+      done
     fi
 
     printf "\n\n${GREEN}Network config complete!${NC}\n"
