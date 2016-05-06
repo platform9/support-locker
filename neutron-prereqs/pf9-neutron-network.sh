@@ -9,8 +9,12 @@ MAGENTA='\033[1;35m'
 CYAN='\033[1;36m'
 NC='\033[0m'
 
+## Validate VLAN ID range
+# Validates whether supplied input (integer) is within the valid VLAN ID range
+# 2 - 4095
+# $1: int
 function validVlan() {
-  grep -E -q '^([1-9]|[1-9][0-9]|[1-9][0-9][0-9]|[1-3][0-9][0-9][0-9]|40[0-9][0-5])$' <<< "$1" && echo "Valid" || echo "Invalid"
+  [[ $1 =~ ^[0-9]{1,4}$ ]] && [[ $1 -gt 1 && $1 -lt 4096 ]]
 }
 
 # Validate input is an integer
@@ -19,55 +23,61 @@ function validInt() {
 }
 
 function validIp() {
-  grep -E -q '^(25[0-4]|2[0-4][0-9]|1[0-9][0-9]|[1]?[1-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)' <<< "$1" && echo "Valid" || echo "Invalid"
+  grep -E -q '^(25[0-4]|2[0-4][0-9]|1[0-9][0-9]|[1]?[1-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)' <<< "$1"
 }
 
 function validNetMask() {
-  grep -E -q '^(254|252|248|240|224|192|128)\.0\.0\.0|255\.(254|252|248|240|224|192|128|0)\.0\.0|255\.255\.(254|252|248|240|224|192|128|0)\.0|255\.255\.255\.(254|252|248|240|224|192|128|0)' <<< "$1" && echo "Valid" || echo "Invalid"
+  grep -E -q '^(254|252|248|240|224|192|128)\.0\.0\.0|255\.(254|252|248|240|224|192|128|0)\.0\.0|255\.255\.(254|252|248|240|224|192|128|0)\.0|255\.255\.255\.(254|252|248|240|224|192|128|0)' <<< "$1"
 }
 
+## Validate interface MTU
+# Validates whether supplied input (integer) is within the valid MTU range
+# 1600 - 9000
+# $1: int
 function validMtu() {
-  grep -E -q '^(1[6-9][0-9][0-9]|[2-8][0-9][0-9][0-9]|9000)$' <<< "$1" && echo "Valid" || echo "Invalid"
+  [[ $1 =~ ^[0-9]{1,4}$ ]] && [[ $1 -ge 1600 && $1 -le 9000 ]]
 }
 
 function validYesNo() {
-  case $1 in
-    [Yy]* ) echo "Valid";;
-    [Nn]* ) echo "Valid";;
-    * ) echo "Invalid";;
-  esac
+  [[ $1 =~ ^[YyNn]$ ]]
 }
 
 function getValidInput() {
+  local errMessage
+
   while true; do
     read -p "$1" getInput
+
     if [ "$2" == "vlan" ]; then
       errMessage="Please enter a valid VLAN between 1-4095!"
-      checkValid=$(validVlan $getInput)
+      validVlan $getInput
     elif [ "$2" == "ipAddress" ]; then
       errMessage="Please enter a valid IP Address!"
-      checkValid=$(validIp $getInput)
+      validIp $getInput
     elif [ "$2" == "netMask" ]; then
       errMessage="Please enter a valid Subnet Mask!"
-      checkValid=$(validNetMask $getInput)
+      validNetMask $getInput
     elif [ "$2" == "yesNo" ]; then
       getInput=$(echo ${getInput:0:1} | awk '{ print tolower($0) }')
       errMessage="Please answer yes or no."
       validYesNo $getInput
     elif [ "$2" == "mtu" ]; then
       errMessage="Please enter a valid MTU between 1600-9000!"
-      checkValid=$(validMtu $getInput)
+      validMtu $getInput
     elif [ "$2" == "freeText" ]; then
-      checkValid="Valid"
+      RC=0
     else
       printf "${RED}!!! Invalid Paramaters sent to getValidInput Fuction !!!${NC}\n" >&2
     fi
-    if [ "$checkValid" == "Valid" ]; then
+
+    # Check return code for last command ran
+    if [[ $? -eq 0 ]]; then
      break
     else
      printf "${RED}Invalid Input. $errMessage${NC}\n" >&2
     fi
   done
+
   echo $getInput
 }
 
