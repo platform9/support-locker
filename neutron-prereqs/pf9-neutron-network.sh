@@ -229,15 +229,16 @@ if [ $configNetworking == "y" ]; then
 
 	# VXLAN Variables
 	if [ "$tunnelTrue" == "y" ]; then
-		separateTunnel=$(getValidInput "Are you using a separate VLAN for tunneling? " "yesNo")
-		printf "${YELLOW} ### Ensure your switches are configured to handle this MTU ###${NC}\n"
-		mtuSize=$(getValidInput "Tunneling requires a minimum MTU of 1600. Please choose an MTU size between 1600-9000: " "mtu")
-	fi
+		printf "${YELLOW}\n# Tunneling requires a minimum MTU of 1600 bytes.\n"
+		printf "# Ensure your switches are configured to handle this MTU${NC}\n"
+		mtuSize=$(getValidInput "Please enter an MTU size between 1600-9000: " "mtu")
 
-	if [ "$separateTunnel" == "y" ]; then
-		tunnelVlanId=$(getValidInput "Tunnel VLAN ID: " "vlan")
-		tunnelIp=$(getValidInput "Tunnel IP Address: " "ipAddress")
-		tunnelSubnet=$(getValidInput "Tunnel Subnet Mask: " "netMask")
+		separateTunnel=$(getValidInput "Are you using a separate VLAN for tunneling? " "yesNo")
+		if [ "$separateTunnel" == "y" ]; then
+			tunnelVlanId=$(getValidInput "Tunnel VLAN ID: " "vlan")
+			tunnelIp=$(getValidInput "Tunnel IP Address: " "ipAddress")
+			tunnelSubnet=$(getValidInput "Tunnel Subnet Mask: " "netMask")
+		fi
 	fi
 
 	vlanTrue=$(getValidInput "Are you using VLAN segmentation? Or planning to have provider networks? " "yesNo")
