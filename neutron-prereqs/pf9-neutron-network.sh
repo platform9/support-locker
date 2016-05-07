@@ -266,7 +266,7 @@ if [ $configNetworking == "y" ]; then
 	External VLAN ID: $extVlan
 	Are you using a separate VLAN for tunneling? $tunnelTrue
 	EOF
-	if [ "$tunnelTrue" == "y" ]; then
+	if [ "$separateTunnel" == "y" ]; then
 		cat <<-EOF
 		Tunnel VLAN ID: $tunnelVlanId
 		Tunnel IP Address: $tunnelIp
