@@ -254,20 +254,24 @@ if [ $configNetworking == "y" ]; then
       printf "Slave 0$i:  $slaveInt\n"
     done
   fi
-  printf "Management VLAN ID: $mgmtVlan\n"
-  printf "Management IP Address: $mgmtIp\n"
-  printf "Management Subnet Mask: $mgmtSubnet\n"
-  printf "Management Gateway: $mgmtGateway\n"
-  printf "DNS Server 1: $mgmtDns1\n"
-  printf "DNS Server 2: $mgmtDns2\n"
-  printf "DNS Search Domain: $mgmtSearchDomain\n"
-  printf "External VLAN ID: $extVlan\n"
-  printf "Are you using a separate VLAN for tunneling? $tunnelTrue\n"
+  cat <<-EOF
+  Management VLAN ID: $mgmtVlan
+  Management IP Address: $mgmtIp
+  Management Subnet Mask: $mgmtSubnet
+  Management Gateway: $mgmtGateway
+  DNS Server 1: $mgmtDns1
+  DNS Server 2: $mgmtDns2
+  DNS Search Domain: $mgmtSearchDomain
+  External VLAN ID: $extVlan
+  Are you using a separate VLAN for tunneling? $tunnelTrue
+  EOF
   if [ "$tunnelTrue" == "y" ]; then
-    printf "Tunnel VLAN ID: $tunnelVlanId\n"
-    printf "Tunnel IP Address: $tunnelIp\n"
-    printf "Tunnel Subnet Mask: $tunnelSubnet\n"
-    printf "Please choose an MTU size between 1600-9000: $mtuSize\n"
+    cat <<-EOF
+    Tunnel VLAN ID: $tunnelVlanId
+    Tunnel IP Address: $tunnelIp
+    Tunnel Subnet Mask: $tunnelSubnet
+    Please choose an MTU size between 1600-9000: $mtuSize
+    EOF
   fi
   printf "Are you using VLAN segmentation? $vlanTrue\n"
   printf "${NC}\n"
@@ -283,17 +287,19 @@ hostProfileScriptName='./hostProfile.sh'
 head -88 $0 > $hostProfileScriptName
 echo "configNetworking=${configNetworking}" >> $hostProfileScriptName
 if [ $configNetworking == "y" ]; then
-  echo 'phyInt='$phyInt >> $hostProfileScriptName
-  echo 'mgmtIp=$(getValidInput "Management IP Address: " "ipAddress")' >> $hostProfileScriptName
-  echo 'mgmtVlan='$mgmtVlan >> $hostProfileScriptName
-  echo 'mgmtSubnet='$mgmtSubnet >> $hostProfileScriptName
-  echo 'mgmtGateway='$mgmtGateway >> $hostProfileScriptName
-  echo 'mgmtDns1='$mgmtDns1 >> $hostProfileScriptName
-  echo 'mgmtDns2='$mgmtDns2 >> $hostProfileScriptName
-  echo 'mgmtSearchDomain='$mgmtSearchDomain >> $hostProfileScriptName
-  echo 'extVlan='$extVlan >> $hostProfileScriptName
-  echo 'tunnelTrue='$tunnelTrue >> $hostProfileScriptName
-  echo 'seperateTunnel='$seperateTunnel >> $hostProfileScriptName
+  cat <<-EOF > $hostProfileScriptName
+  phyInt=$phyInt
+  mgmtIp=$(getValidInput "Management IP Address: " "ipAddress")
+  mgmtVlan=$mgmtVlan
+  mgmtSubnet=$mgmtSubnet
+  mgmtGateway=$mgmtGateway
+  mgmtDns1=$mgmtDns1
+  mgmtDns2=$mgmtDns2
+  mgmtSearchDomain=$mgmtSearchDomain
+  extVlan=$extVlan
+  tunnelTrue=$tunnelTrue
+  seperateTunnel=$seperateTunnel
+  EOF
   if [ "$seperateTunnel" == "y" ]; then
     echo 'tunnelIp=$(getValidInput "Tunnel IP Address: " "ipAddress")' >> $hostProfileScriptName
     echo 'tunnelVlanId='$tunnelVlanId >> $hostProfileScriptName
@@ -347,16 +353,18 @@ if [ $OS == 'Enterprise Linux' ]; then
     # Backup all old network config files
     cp /etc/sysconfig/network-scripts/ifcfg-* ~/
     # Create Sub-Interface for Management
-    echo DEVICE=$phyInt.$mgmtVlan > /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
-    echo ONBOOT=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
-    echo BOOTPROTO=none >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
-    echo TYPE=Vlan >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
-    echo VLAN=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
-    echo IPADDR=$mgmtIp >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
-    echo NETMASK=$mgmtSubnet >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
-    echo GATEWAY=$mgmtGateway >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
-    echo DNS1=$mgmtDns1 >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
-    echo DNS2=$mgmtDns2 >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
+    cat <<-EOF > /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
+    DEVICE=$phyInt.$mgmtVlan
+    ONBOOT=yes
+    BOOTPROTO=none
+    TYPE=Vlan
+    VLAN=yes
+    IPADDR=$mgmtIp
+    NETMASK=$mgmtSubnet
+    GATEWAY=$mgmtGateway
+    DNS1=$mgmtDns1
+    DNS2=$mgmtDns2
+    EOF
     if [ "$tunnelTrue" == "y" ]; then
       if [ "$seperateTunnel" == "n" ]; then
         # Add larger MTU to the physical interface
@@ -366,65 +374,80 @@ if [ $OS == 'Enterprise Linux' ]; then
 
     # Setup External Network
     ## Create Bridge for External Network
-    echo DEVICE=br-ext > /etc/sysconfig/network-scripts/ifcfg-br-ext
-    echo BOOTPROTO=none >> /etc/sysconfig/network-scripts/ifcfg-br-ext
-    echo ONBOOT=yes >> /etc/sysconfig/network-scripts/ifcfg-br-ext
-    echo TYPE=OVSBridge >> /etc/sysconfig/network-scripts/ifcfg-br-ext
-    echo DEVICETYPE=ovs >> /etc/sysconfig/network-scripts/ifcfg-br-ext
+    cat <<-EOF > /etc/sysconfig/network-scripts/ifcfg-br-ext
+    DEVICE=br-ext
+    BOOTPROTO=none
+    ONBOOT=yes
+    TYPE=OVSBridge
+    DEVICETYPE=ovs
+    EOF
 
     ## Create and Slave External Sub-Interface to External Bridge
-    echo DEVICE=$phyInt.$extVlan > /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
-    echo ONBOOT=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
-    echo TYPE=OVSPort >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
-    echo VLAN=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
-    echo DEVICETYPE=ovs >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
-    echo OVS_BRIDGE=br-ext >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
+    cat <<-EOF > /etc/sysconfig/network-scripts/ifcfg-$phyInt.$extVlan
+    DEVICE=$phyInt.$extVlan
+    ONBOOT=yes
+    TYPE=OVSPort
+    VLAN=yes
+    DEVICETYPE=ovs
+    OVS_BRIDGE=br-ext
+    EOF
 
     ## Slave Physical Interface to VLAN Bridge
-    echo DEVICE=$phyInt > /etc/sysconfig/network-scripts/ifcfg-$phyInt
-    echo BOOTPROTO=none >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
-    echo ONBOOT=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
-
+    cat <<-EOF > /etc/sysconfig/network-scripts/ifcfg-$phyInt
+    DEVICE=$phyInt
+    BOOTPROTO=none
+    ONBOOT=yes
+    EOF
 
     if [ "$configureBonding" == "y" ]; then
-      echo BONDING_MASTER=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInts
-      echo 'BONDING_OPTS="mode='$bondingMode'"' >> /etc/sysconfig/network-scripts/ifcfg-$phyInts
+      cat <<-EOF > /etc/sysconfig/network-scripts/ifcfg-$phyInt
+      BONDING_MASTER=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
+      BONDING_OPTS="mode=$bondingMode"
+      EOF
       if [ "$vlanTrue" != "y" ]; then
         echo TYPE=Bond >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
       fi
       for slaveInt in "${bondingInts[@]}"; do
-        echo DEVICE=$slaveInt > /etc/sysconfig/network-scripts/ifcfg-$slaveInt
-        echo BOOTPROTO=none >> /etc/sysconfig/network-scripts/ifcfg-$slaveInt
-        echo ONBOOT=yes >> /etc/sysconfig/network-scripts/ifcfg-$slaveInt
-        echo TYPE=Ethernet >> /etc/sysconfig/network-scripts/ifcfg-$slaveInt
-        echo MASTER=bond0 >> /etc/sysconfig/network-scripts/ifcfg-$slaveInt
-        echo SLAVE=yes >> /etc/sysconfig/network-scripts/ifcfg-$slaveInt
+        cat <<-EOF > /etc/sysconfig/network-scripts/ifcfg-$slaveInt
+        DEVICE=$slaveInt
+        BOOTPROTO=none
+        ONBOOT=yes
+        TYPE=Ethernet
+        MASTER=bond0
+        SLAVE=yes
+        EOF
       done
     fi
 
     if [ "$vlanTrue" == "y" ]; then
       ## Setup Bridge for VLAN Trunk
-      echo DEVICE=br-vlan > /etc/sysconfig/network-scripts/ifcfg-br-vlan
-      echo BOOTPROTO=none >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
-      echo ONBOOT=yes >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
-      echo TYPE=OVSBridge >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
-      echo DEVICETYPE=ovs >> /etc/sysconfig/network-scripts/ifcfg-br-vlan
+      cat <<-EOF > /etc/sysconfig/network-scripts/ifcfg-br-vlan
+      DEVICE=br-vlan
+      BOOTPROTO=none
+      ONBOOT=yes
+      TYPE=OVSBridge
+      DEVICETYPE=ovs
+      EOF
 
-      echo OVS_BRIDGE=br-vlan >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
-      echo TYPE=OVSPort >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
-      echo DEVICETYPE=ovs >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
+      cat <<-EOF >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
+      OVS_BRIDGE=br-vlan
+      TYPE=OVSPort
+      DEVICETYPE=ovs
+      EOF
     fi
 
     if [ "$seperateTunnel" == "y" ]; then
       # Create Sub-Interface for tunneling
-      echo DEVICE=$phyInt.$tunnelVlan > /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
-      echo IPADDR=$tunnelIp >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
-      echo NETMASK=$tunnelSubnet >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
-      echo ONBOOT=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
-      echo BOOTPROTO=none >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
-      echo VLAN=yes >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
-      echo TYPE=Vlan >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
-      echo MTU=$mtuSize >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlan
+      cat <<-EOF > /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlanId
+      DEVICE=$phyInt.$tunnelVlanId
+      IPADDR=$tunnelIp
+      NETMASK=$tunnelSubnet
+      ONBOOT=yes
+      BOOTPROTO=none
+      VLAN=yes
+      TYPE=Vlan
+      MTU=$mtuSize
+      EOF
     fi
 
     printf "\n${GREEN}Network config complete!${NC}"
@@ -505,93 +528,106 @@ elif [ $OS == 'Ubuntu' ]; then
     cp /etc/network/interfaces ~/
 
     # Create interfaces header
-    echo "# This file describes the network interfaces available on your system" > /etc/network/interfaces
-    echo "# and how to activate them. For more information, see interfaces(5)." >> /etc/network/interfaces
-    echo "" >> /etc/network/interfaces
-    echo "# The loopback network interface" >> /etc/network/interfaces
-    echo "auto lo" >> /etc/network/interfaces
-    echo "iface lo inet loopback" >> /etc/network/interfaces
-    echo "" >> /etc/network/interfaces
+    cat <<-EOF > /etc/network/interfaces
+    # This file describes the network interfaces available on your system
+    # and how to activate them. For more information, see interfaces(5).
 
-    # Define Sub-Interface interface for Management
-    echo "# Management Sub-Interface" >> /etc/network/interfaces
-    echo "auto $phyInt.$mgmtVlan"  >> /etc/network/interfaces
-    echo "iface $phyInt.$mgmtVlan inet static" >> /etc/network/interfaces
-    echo "  address $mgmtIp" >> /etc/network/interfaces
-    echo "  netmask $mgmtSubnet" >> /etc/network/interfaces
-    echo "  gateway $mgmtGateway" >> /etc/network/interfaces
-    echo "  dns-nameservers $mgmtDns1 $mgmtDns2" >> /etc/network/interfaces
-    echo "  dns-search $mgmtSearchDomain" >> /etc/network/interfaces
+    # The loopback network interface
+    auto lo
+    iface lo inet loopback
+
+    # Management sub-interface
+    auto $phyInt.$mgmtVlan
+    iface $phyInt.$mgmtVlan inet static
+      address $mgmtIp
+      netmask $mgmtSubnet
+      gateway $mgmtGateway
+      dns-nameservers $mgmtDns1 $mgmtDns2
+      dns-search $mgmtSearchDomain
+    EOF
     if [ "$tunnelTrue" == "y" ]; then
       if [ "$seperateTunnel" == "n" ]; then
         # Add larger MTU to the physical interface
-        echo "  mtu $mtuSize" >> /etc/network/interfaces
+        printf "  mtu ${mtuSize}\n\n" >> /etc/network/interfaces
       fi
     fi
-    echo "" >> /etc/network/interfaces
-
 
     if [ "$seperateTunnel" == "y" ]; then
-      # Define Sub-Interface interface for tunneling
-      echo "# Tunneling Sub-Interface" >> /etc/network/interfaces
-      echo "auto $phyInt.$tunnelVlanId"  >> /etc/network/interfaces
-      echo "iface $phyInt.$tunnelVlanId inet static" >> /etc/network/interfaces
-      echo "  address $tunnelIp" >> /etc/network/interfaces
-      echo "  netmask $tunnelSubnet" >> /etc/network/interfaces
+      cat <<-EOF >> /etc/network/interfaces
+      # Tunneling sub-interface
+      auto $phyInt.$tunnelVlanId
+      iface $phyInt.$tunnelVlanId inet static
+        address $tunnelIp
+        netmask $tunnelSubnet
+      EOF
       if [ "$tunnelTrue" == "y" ]; then
         # Add larger MTU to the physical interface
-        echo "  mtu $mtuSize" >> /etc/network/interfaces
+        printf "  mtu ${mtuSize}\n\n" >> /etc/network/interfaces
       fi
-      echo "" >> /etc/network/interfaces
     fi
     # Setup External Network
 
     ## Create sub-interface for external network
-    echo "# External Sub-Interface" >> /etc/network/interfaces
-    echo "allow-br-ext $phyInt.$extVlan"  >> /etc/network/interfaces
-    echo "iface $phyInt.$extVlan inet manual" >> /etc/network/interfaces
-    echo "  ovs_type OVSPort" >> /etc/network/interfaces
-    echo "  ovs_bridge br-ext" >> /etc/network/interfaces
-    echo "" >> /etc/network/interfaces
+    cat <<-EOF >> /etc/network/interfaces
+    # External Sub-Interface
+    allow-br-ext $phyInt.$extVlan
+    iface $phyInt.$extVlan inet manual
+      ovs_type OVSPort
+      ovs_bridge br-ext
+
+    EOF
 
     ## Create External Bridge
-    echo "# External Bridge" >> /etc/network/interfaces
-    echo "allow-ovs br-ext" >> /etc/network/interfaces
-    echo "iface br-ext inet manual" >> /etc/network/interfaces
-    echo "  ovs_type OVSBridge" >> /etc/network/interfaces
-    echo "  ovs_ports $phyInt.$extVlan" >> /etc/network/interfaces
-    echo "" >> /etc/network/interfaces
+    cat <<-EOF >> /etc/network/interfaces
+    # External Bridge
+    allow-ovs br-ext
+    iface br-ext inet manual
+      ovs_type OVSBridge
+      ovs_ports $phyInt.$extVlan
+
+    EOF
 
     if [ "$vlanTrue" == "y" ]; then
       ## Setup Bridge for VLAN Trunk
-      echo "# Physical Interface" >> /etc/network/interfaces
-      echo "allow-br-vlan $phyInt" >> /etc/network/interfaces
-      echo "iface $phyInt inet manual" >> /etc/network/interfaces
-      echo "  ovs_bridge br-vlan" >> /etc/network/interfaces
-      echo "  ovs_type OVSPort" >> /etc/network/interfaces
-      # Setup VLAN Trunk for provider and tenant networks.
-      echo "# VLAN Bridge" >> /etc/network/interfaces
-      echo "allow-ovs br-vlan" >> /etc/network/interfaces
-      echo "iface br-vlan inet manual" >> /etc/network/interfaces
-      echo "  ovs_type OVSBridge" >> /etc/network/interfaces
-      echo "  ovs_ports $phyInt" >> /etc/network/interfaces
+      cat <<-EOF >> /etc/network/interfaces
+      # Physical interface
+      allow-br-vlan $phyInt
+      iface $phyInt inet manual
+        ovs_bridge br-vlan
+        ovs_type OVSPort
+      EOF
+      if [ -n $mtuSize ]; then
+        echo "  mtu $mtuSize" >> /etc/network/interfaces
+      fi
       echo "" >> /etc/network/interfaces
+
+      # Setup VLAN Trunk for provider and tenant networks.
+      cat <<-EOF >> /etc/network/interfaces
+      # VLAN Bridge
+      allow-ovs br-vlan
+      iface br-vlan inet manual
+        ovs_type OVSBridge
+        ovs_ports $phyInt
+      EOF
     else
-      # Setup Physical Interface
-      echo "# Physical Interface" >> /etc/network/interfaces
-      echo "auto $phyInt" >> /etc/network/interfaces
-      echo "iface $phyInt inet manual" >> /etc/network/interfaces
+      cat <<-EOF >> /etc/network/interfaces
+      # Physical Interface
+      auto $phyInt
+      iface $phyInt inet manual
+      EOF
     fi
 
     if [ "$configureBonding" == "y" ]; then
-      echo "  bond-mode $bondingMode" >> /etc/network/interfaces
-      echo "" >> /etc/network/interfaces
+      printf "  bond-mode ${bondingMode}\n\n" >> /etc/network/interfaces
+
       for slaveInt in "${bondingInts[@]}"; do
-        echo "# Slaving $slaveInt to Master $phyInt" >> /etc/network/interfaces
-        echo "auto $slaveInt" >> /etc/network/interfaces
-        echo "iface $slaveInt inet manual" >> /etc/network/interfaces
-        echo "  bond-master $phyInt" >> /etc/network/interfaces
-        echo "" >> /etc/network/interfaces
+        cat <<-EOF >> /etc/network/interfaces
+        # Slaving $slaveInt to Master $phyInt
+        auto $slaveInt
+        iface $slaveInt inet manual
+          bond-master $phyInt
+
+        EOF
       done
     fi
 
