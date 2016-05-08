@@ -116,8 +116,20 @@ OS=$(whichOS)
 
 configNetworking=$(getValidInput "Would you like for this script to walk you through configuring networking? " "yesNo")
 bondingInts=()
+
 if [ $configNetworking == "y" ]; then
-  phyInts=($(ls -l /sys/class/net/ | grep -i 'pci'  | awk '{print $9}'))
+  if [[ ! -d /sys/class/net ]]; then
+    printf "${RED}No network interfaces found!\n"
+    exit 1
+  fi
+
+  phyInts=($(ls -l /sys/class/net/ | grep -i 'pci' | awk '{print $9}'))
+
+  # Exit if no interfaces were found
+  if [[ ${#phyInts[@]} -eq 0 ]]; then
+    printf "${RED}No network interfaces found!\n"
+    exit 1
+  fi
 
   if [ ${#phyInts[@]} -eq 1 ]; then
     phyInt=${phyInts[0]}
