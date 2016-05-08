@@ -229,12 +229,12 @@ if [ $configNetworking == "y" ]; then
 
 	# VXLAN Variables
 	if [ "$tunnelTrue" == "y" ]; then
-		seperateTunnel=$(getValidInput "Are you using a separate VLAN for tunneling? " "yesNo")
+		separateTunnel=$(getValidInput "Are you using a separate VLAN for tunneling? " "yesNo")
 		printf "${YELLOW} ### Ensure your switches are configured to handle this MTU ###${NC}\n"
 		mtuSize=$(getValidInput "Tunneling requires a minimum MTU of 1600. Please choose an MTU size between 1600-9000: " "mtu")
 	fi
 
-	if [ "$seperateTunnel" == "y" ]; then
+	if [ "$separateTunnel" == "y" ]; then
 		tunnelVlanId=$(getValidInput "Tunnel VLAN ID: " "vlan")
 		tunnelIp=$(getValidInput "Tunnel IP Address: " "ipAddress")
 		tunnelSubnet=$(getValidInput "Tunnel Subnet Mask: " "netMask")
@@ -298,9 +298,9 @@ if [ $configNetworking == "y" ]; then
 	mgmtSearchDomain=$mgmtSearchDomain
 	extVlan=$extVlan
 	tunnelTrue=$tunnelTrue
-	seperateTunnel=$seperateTunnel
+	separateTunnel=$separateTunnel
 	EOF
-	if [ "$seperateTunnel" == "y" ]; then
+	if [ "$separateTunnel" == "y" ]; then
 		echo 'tunnelIp=$(getValidInput "Tunnel IP Address: " "ipAddress")' >> $hostProfileScriptName
 		echo 'tunnelVlanId='$tunnelVlanId >> $hostProfileScriptName
 		echo 'tunnelSubnet='$tunnelSubnet >> $hostProfileScriptName
@@ -366,7 +366,7 @@ if [[ -n $OS && $OS == 'Enterprise Linux' ]]; then
 		DNS2=$mgmtDns2
 		EOF
 		if [ "$tunnelTrue" == "y" ]; then
-			if [ "$seperateTunnel" == "n" ]; then
+			if [ "$separateTunnel" == "n" ]; then
 				# Add larger MTU to the physical interface
 				echo MTU=$mtuSize >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
 			fi
@@ -436,7 +436,7 @@ if [[ -n $OS && $OS == 'Enterprise Linux' ]]; then
 			EOF
 		fi
 
-		if [ "$seperateTunnel" == "y" ]; then
+		if [ "$separateTunnel" == "y" ]; then
 			# Create Sub-Interface for tunneling
 			cat <<-EOF > /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlanId
 			DEVICE=$phyInt.$tunnelVlanId
@@ -546,13 +546,13 @@ elif [[ -n $OS && $OS == 'Ubuntu' ]]; then
 		  dns-search $mgmtSearchDomain
 		EOF
 		if [ "$tunnelTrue" == "y" ]; then
-			if [ "$seperateTunnel" == "n" ]; then
+			if [ "$separateTunnel" == "n" ]; then
 				# Add larger MTU to the physical interface
 				printf "  mtu ${mtuSize}\n\n" >> /etc/network/interfaces
 			fi
 		fi
 
-		if [ "$seperateTunnel" == "y" ]; then
+		if [ "$separateTunnel" == "y" ]; then
 			cat <<-EOF >> /etc/network/interfaces
 			# Tunneling sub-interface
 			auto $phyInt.$tunnelVlanId
