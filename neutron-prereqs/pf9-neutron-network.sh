@@ -313,7 +313,7 @@ tail -340 $0 >> $hostProfileScriptName
 
 echo "Installing Neutron prerequisites..."
 
-if [ $OS == 'Enterprise Linux' ]; then
+if [[ -n $OS && $OS == 'Enterprise Linux' ]]; then
 
 	# Disable SELinux
 	printf "\n${RED}!!! We are setting SELINUX to permisive !!!\n!!! This is required for Software Definded Networks !!!${NC}\n"
@@ -490,7 +490,7 @@ if [ $OS == 'Enterprise Linux' ]; then
 		esac
 	fi
 	printf "\n${GREEN}DONE!!!${NC}\n"
-elif [ $OS == 'Ubuntu' ]; then
+elif [[ -n $OS && $OS == 'Ubuntu' ]]; then
 	# Install the VLAN package
 	apt-get -y -q=2 install vlan ifenslave
 
@@ -648,6 +648,5 @@ elif [ $OS == 'Ubuntu' ]; then
 	fi
 	printf "\n${GREEN}DONE!!!${NC}\n"
 else
-	printf "${RED}!!! Somehow we lost which operating system you are using !!!${NC}\n"
-	printf "${RED}!!! Ending Script !!!${NC}\n"
+	printf "${RED}!!! Unable to determine OS / unsupported OS !!!${NC}\n"
 fi
