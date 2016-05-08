@@ -284,12 +284,12 @@ fi
 
 hostProfileScriptName='./hostProfile.sh'
 
-head -88 $0 > $hostProfileScriptName
+head -115 $0 > $hostProfileScriptName
 echo "configNetworking=${configNetworking}" >> $hostProfileScriptName
 if [ $configNetworking == "y" ]; then
-	cat <<-EOF > $hostProfileScriptName
+	echo 'mgmtIp=$(getValidInput "Management IP Address: " "ipAddress")' >> $hostProfileScriptName
+	cat <<-EOF >> $hostProfileScriptName
 	phyInt=$phyInt
-	mgmtIp=$(getValidInput "Management IP Address: " "ipAddress")
 	mgmtVlan=$mgmtVlan
 	mgmtSubnet=$mgmtSubnet
 	mgmtGateway=$mgmtGateway
@@ -309,7 +309,7 @@ if [ $configNetworking == "y" ]; then
 		echo 'mtuSize='$mtuSize >> $hostProfileScriptName
 	fi
 fi
-tail -310 $0 >> $hostProfileScriptName
+tail -340 $0 >> $hostProfileScriptName
 
 echo "Installing Neutron prerequisites..."
 
