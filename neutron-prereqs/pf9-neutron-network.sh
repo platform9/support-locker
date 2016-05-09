@@ -310,7 +310,7 @@ if [ $configNetworking == "y" ]; then
 		echo 'mtuSize='$mtuSize >> $hostProfileScriptName
 	fi
 fi
-tail -340 $0 >> $hostProfileScriptName
+tail -338 $0 >> $hostProfileScriptName
 
 echo "Installing Neutron prerequisites..."
 
@@ -367,8 +367,11 @@ if [[ -n $OS && $OS == 'Enterprise Linux' ]]; then
 		DNS2=$mgmtDns2
 		EOF
 		# Add larger MTU to the physical interface
-		if [[ "$tunnelTrue" == "y" && "$separateTunnel" == "n" ]]; then
-			echo MTU=$mtuSize >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
+		if [[ "$tunnelTrue" == "y" ]]; then
+			echo MTU=$mtuSize >> /etc/sysconfig/network-scripts/ifcfg-$phyInt
+			if [[ "$separateTunnel" == "n" ]]; then
+				echo MTU=$mtuSize >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
+			fi
 		fi
 
 		# Setup External Network
