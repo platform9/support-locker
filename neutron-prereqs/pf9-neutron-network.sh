@@ -547,7 +547,10 @@ elif [[ -n $OS && $OS == 'Ubuntu' ]]; then
 		if [ "$tunnelTrue" == "y" ]; then
 			if [ "$separateTunnel" == "n" ]; then
 				# Add larger MTU to the physical interface
-				echo "  mtu ${mtuSize}" >> /etc/network/interfaces
+				cat <<-EOF >> /etc/network/interfaces
+				  post-up ifconfig $phyInt mtu $mtuSize
+				  post-up ifconfig $phyInt.$mgmtVlan mtu $mtuSize
+				EOF
 			elif [ "$separateTunnel" == "y" ]; then
 				cat <<-EOF >> /etc/network/interfaces
 
@@ -556,6 +559,8 @@ elif [[ -n $OS && $OS == 'Ubuntu' ]]; then
 				iface $phyInt.$tunnelVlanId inet static
 				  address $tunnelIp
 				  netmask $tunnelSubnet
+				  post-up ifconfig $phyInt mtu $mtuSize
+				  post-up ifconfig $phyInt.$tunnelVlanId mtu $mtuSize
 				EOF
 			fi
 		fi
@@ -589,11 +594,8 @@ elif [[ -n $OS && $OS == 'Ubuntu' ]]; then
 			iface $phyInt inet manual
 			  ovs_bridge br-vlan
 			  ovs_type OVSPort
+
 			EOF
-			if [ -n $mtuSize ]; then
-				echo "  mtu $mtuSize" >> /etc/network/interfaces
-			fi
-			echo "" >> /etc/network/interfaces
 
 			# Setup VLAN Trunk for provider and tenant networks.
 			cat <<-EOF >> /etc/network/interfaces
