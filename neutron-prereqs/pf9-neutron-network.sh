@@ -502,9 +502,9 @@ elif [[ -n $OS && $OS == 'Ubuntu' ]]; then
 	modprobe bonding
 
 	# Make modules persistent
-	echo br_netfilter >> /etc/modules
-	echo 8021q >> /etc/modules
-	echo bonding >> /etc/modules
+	putLineInFile br_netfilter '/etc/modules'
+	putLineInFile 8021q '/etc/modules'
+	putLineInFile bonding '/etc/modules'
 
 	# Setup sysctl vairables
 	putLineInFile '# Needed for neutron networking' '/etc/sysctl.conf'
