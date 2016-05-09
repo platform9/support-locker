@@ -366,11 +366,9 @@ if [[ -n $OS && $OS == 'Enterprise Linux' ]]; then
 		DNS1=$mgmtDns1
 		DNS2=$mgmtDns2
 		EOF
-		if [ "$tunnelTrue" == "y" ]; then
-			if [ "$separateTunnel" == "n" ]; then
-				# Add larger MTU to the physical interface
-				echo MTU=$mtuSize >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
-			fi
+		# Add larger MTU to the physical interface
+		if [[ "$tunnelTrue" == "y" && "$separateTunnel" == "n" ]]; then
+			echo MTU=$mtuSize >> /etc/sysconfig/network-scripts/ifcfg-$phyInt.$mgmtVlan
 		fi
 
 		# Setup External Network
@@ -549,24 +547,19 @@ elif [[ -n $OS && $OS == 'Ubuntu' ]]; then
 		if [ "$tunnelTrue" == "y" ]; then
 			if [ "$separateTunnel" == "n" ]; then
 				# Add larger MTU to the physical interface
-				printf "  mtu ${mtuSize}\n\n" >> /etc/network/interfaces
-			fi
-		fi
+				echo "  mtu ${mtuSize}" >> /etc/network/interfaces
+			elif [ "$separateTunnel" == "y" ]; then
+				cat <<-EOF >> /etc/network/interfaces
 
-		if [ "$separateTunnel" == "y" ]; then
-			cat <<-EOF >> /etc/network/interfaces
-			# Tunneling sub-interface
-			auto $phyInt.$tunnelVlanId
-			iface $phyInt.$tunnelVlanId inet static
-			  address $tunnelIp
-			  netmask $tunnelSubnet
-			EOF
-			if [ "$tunnelTrue" == "y" ]; then
-				# Add larger MTU to the physical interface
-				printf "  mtu ${mtuSize}\n\n" >> /etc/network/interfaces
+				# Tunneling sub-interface
+				auto $phyInt.$tunnelVlanId
+				iface $phyInt.$tunnelVlanId inet static
+				  address $tunnelIp
+				  netmask $tunnelSubnet
+				EOF
 			fi
 		fi
-		# Setup External Network
+		printf "\n" >> /etc/network/interfaces
 
 		## Create sub-interface for external network
 		cat <<-EOF >> /etc/network/interfaces
