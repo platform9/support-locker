@@ -477,10 +477,10 @@ if [[ -n $OS && $OS == 'Enterprise Linux' ]]; then
 			printf "${NC}"
 		fi
 
-		if [ "$vxlanTrue" == "y" ]; then
-			printf "\n${GREEN}VXLAN Interface: /etc/sysconfig/network-scripts/ifcfg-$phyInt.$vxlanVlan${NC}\n"
+		if [ "$separateTunnel" == "y" ]; then
+			printf "\n${GREEN}VXLAN Interface: /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlanId${NC}\n"
 			printf "${YELLOW}"
-			cat /etc/sysconfig/network-scripts/ifcfg-$phyInt.$vxlanVlan
+			cat /etc/sysconfig/network-scripts/ifcfg-$phyInt.$tunnelVlanId
 			printf "${NC}"
 		fi
 
