@@ -44,9 +44,16 @@ function validYesNo() {
 
 function getValidInput() {
 	local errMessage
+	local prompt
+
+	if [[ $2 == 'yesNo' ]]; then
+		prompt="${1} (yes/no)? "
+	else
+		prompt="${1}"
+	fi
 
 	while true; do
-		read -p "$1" getInput
+		read -p "$prompt" getInput
 
 		if [ "$2" == "vlan" ]; then
 			errMessage="Please enter a valid VLAN between 1-4095!"
@@ -114,7 +121,7 @@ $(printBanner)
 
 OS=$(whichOS)
 
-configNetworking=$(getValidInput "Would you like for this script to walk you through configuring networking? " "yesNo")
+configNetworking=$(getValidInput "Would you like for this script to walk you through configuring networking" "yesNo")
 bondingInts=()
 
 if [ $configNetworking == "y" ]; then
@@ -136,7 +143,7 @@ if [ $configNetworking == "y" ]; then
 	else
 
 		printf "${GREEN}Multiple physical interfaces were detected${NC}\n"
-		configureBonding=$(getValidInput "Would you like to configure bonding? " "yesNo")
+		configureBonding=$(getValidInput "Would you like to configure bonding" "yesNo")
 		if [ $configureBonding == "y" ]; then
 			bondingModes=("0) balance-rr" "1) active-backup" "2) balance-xor" "3) broadcast" "4) 802.3ad" "5) balance-tlb" "6) balance-alb")
 			while true; do
@@ -176,7 +183,7 @@ if [ $configNetworking == "y" ]; then
 					echo "Ints out of Bond:  ${#phyInts[@]}"
 
 					if [ ${#bondingInts[@]} -gt 1 ] && [ ${#bondingInts[@]} -lt 4 ] && [ ${#phyInts[@]} != 0 ]; then
-						addAnother=$(getValidInput "Would you like to add another interface? " "yesNo")
+						addAnother=$(getValidInput "Would you like to add another interface" "yesNo")
 						if [ $addAnother == "n" ]; then
 							break
 						fi
@@ -225,7 +232,7 @@ if [ $configNetworking == "y" ]; then
 	extVlan=$(getValidInput "External VLAN ID: " "vlan")
 
 	# VXLAN or GRE?
-	tunnelTrue=$(getValidInput "Do you plan on using VXLAN or GRE tunneling? " "yesNo")
+	tunnelTrue=$(getValidInput "Do you plan on using VXLAN, or GRE tunneling" "yesNo")
 
 	# VXLAN Variables
 	if [ "$tunnelTrue" == "y" ]; then
@@ -233,7 +240,7 @@ if [ $configNetworking == "y" ]; then
 		printf "# Ensure your switches are configured to handle this MTU${NC}\n"
 		mtuSize=$(getValidInput "Please enter an MTU size between 1600-9000: " "mtu")
 
-		separateTunnel=$(getValidInput "Are you using a separate VLAN for tunneling? " "yesNo")
+		separateTunnel=$(getValidInput "Are you using a separate VLAN for tunneling" "yesNo")
 		if [ "$separateTunnel" == "y" ]; then
 			tunnelVlanId=$(getValidInput "Tunnel VLAN ID: " "vlan")
 			tunnelIp=$(getValidInput "Tunnel IP Address: " "ipAddress")
@@ -241,7 +248,7 @@ if [ $configNetworking == "y" ]; then
 		fi
 	fi
 
-	vlanTrue=$(getValidInput "Are you using VLAN segmentation? Or planning to have provider networks? " "yesNo")
+	vlanTrue=$(getValidInput "Are you using VLAN segmentation, or planning to have provider networks" "yesNo")
 
 	printf "${GREEN}You have cooperated nicely by answering the questions asked of you!${NC}\n\n"
 	printf "${CYAN}"
@@ -276,7 +283,7 @@ if [ $configNetworking == "y" ]; then
 	fi
 	printf "Are you using VLAN segmentation? $vlanTrue\n"
 	printf "${NC}\n"
-	finalAnswer=$(getValidInput "Are these your final answers?! " "yesNo")
+	finalAnswer=$(getValidInput "Are these your final answers" "yesNo")
 	if [ "$finalAnswer" == "n" ]; then
 		printf "\n${RED}!!! We are aborting, No changes have been made !!!${NC}\n"
 		exit
