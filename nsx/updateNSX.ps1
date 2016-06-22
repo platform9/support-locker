@@ -33,7 +33,8 @@ $postBody = '{
                    "datastore_id": "",
                    "external_network": "",
                    "dvs_id": "",
-                   "mgt_net_moid": ""
+                   "mgt_net_moid": "",
+                   "vdn_scope_id": "",
                  }
                },
                "configured": true,
