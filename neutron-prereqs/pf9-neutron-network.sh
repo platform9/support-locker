@@ -524,7 +524,7 @@ elif [[ -n $OS && $OS == 'Ubuntu' ]]; then
 	sysctl -q -p
 
 	# Add PF9 APT source repository
-	add-apt-repository 'deb http://platform9-neutron.s3-website-us-west-1.amazonaws.com ubuntu'
+	add-apt-repository 'deb http://platform9-neutron.s3-website-us-west-1.amazonaws.com ubuntu/'
 
 	# Update APT Source
 	apt-get update -q=2
