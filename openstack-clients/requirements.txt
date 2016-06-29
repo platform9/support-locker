@@ -3,6 +3,7 @@ python-cinderclient==1.4.0
 python-glanceclient==1.1.0
 python-heatclient==0.8.0
 python-keystoneclient==1.7.3
+python-muranoclient==0.8.4
 python-neutronclient==3.1.1
 python-novaclient==2.30.2
 python-openstackclient==1.7.1
