@@ -1,0 +1,31 @@
+heat_template_version: 2015-10-15
+
+description: A simple test stack which creates one instance
+
+parameters:
+  image:
+    type: string
+    description: Image for the instance
+  network:
+    type: string
+    description: Network ID for instance
+  flavor:
+    type: string
+    description: Flavor name of instance
+
+resources:
+  server:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      networks:
+        - network: { get_param: network }
+
+outputs:
+  ip_address:
+    description: First IP address of the instance
+    value: { get_attr: [ server, first_address ] }
+  name:
+    description: Instance name
+    value: { get_attr: [ server, name ] }

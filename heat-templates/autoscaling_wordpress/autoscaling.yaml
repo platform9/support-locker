@@ -1,0 +1,148 @@
+heat_template_version: 2015-10-15
+
+description: >
+  An autoscaling WordPress template. Launches an autoscaling group of WordPress
+  servers. An HAProxy server is also created to redistribute the work as the
+  size of the group changes.
+
+parameters:
+  os_auth_url:
+    type: string
+    description: Openstack authentication URL
+  os_user:
+    type: string
+    description: Openstack user name
+  os_tenant:
+    type: string
+    description: Openstack tenant name
+  os_region:
+    type: string
+    description: Openstack region name
+  os_password:
+    type: string
+    description: Openstack password
+    hidden: true
+  network:
+    type: string
+    description: Network used by the servers
+  haproxy_image:
+    type: string
+    description: Image used for the HAProxy server
+    default: ubuntu14-cloudinit
+  haproxy_flavor:
+    type: string
+    description: Flavor used by the HAProxy server
+    default: 1cpu.2gb.samedisk
+  haproxy_key_name:
+    type: string
+    description: SSH key to connect to the HAProxy server
+    default: default
+  wordpress_image:
+    type: string
+    description: Image used for the WordPress servers
+    default: ubuntu14-cloudinit
+  wordpress_key_name:
+    type: string
+    description: SSH key to connect to the WordPress servers
+    default: default
+  wordpress_flavor:
+    type: string
+    description: Image used to create the WordPress servers
+    default: 1cpu.2gb.samedisk
+
+resources:
+  asg:
+    type: OS::Heat::AutoScalingGroup
+    properties:
+      cooldown: 300
+      desired_capacity: 2
+      min_size: 2
+      max_size: 5
+      resource:
+        type: wp_server.yaml
+        properties:
+          image: { get_param: wordpress_image }
+          key_name: { get_param: wordpress_key_name }
+          flavor: { get_param: wordpress_flavor }
+          network: { get_param: network }
+          metadata: { "metering.stack": { get_param: "OS::stack_id" } }
+
+  web_server_scaleup_policy:
+    type: OS::Heat::ScalingPolicy
+    properties:
+      adjustment_type: change_in_capacity
+      auto_scaling_group_id: {get_resource: asg}
+      cooldown: 300
+      scaling_adjustment: 1
+
+  web_server_scaledown_policy:
+    type: OS::Heat::ScalingPolicy
+    properties:
+      adjustment_type: change_in_capacity
+      auto_scaling_group_id: {get_resource: asg}
+      cooldown: 300
+      scaling_adjustment: -1
+
+  cpu_alarm_high:
+    type: OS::Ceilometer::Alarm
+    properties:
+      description: Scale-up if the average CPU > 50% for 1 minute
+      meter_name: cpu_util
+      statistic: avg
+      period: 600
+      evaluation_periods: 1
+      threshold: 20
+      alarm_actions:
+        - {get_attr: [web_server_scaleup_policy, alarm_url]}
+      matching_metadata: {'metadata.user_metadata.stack': {get_param: "OS::stack_id"}}
+      comparison_operator: gt
+
+  cpu_alarm_low:
+    type: OS::Ceilometer::Alarm
+    properties:
+      description: Scale-down if the average CPU < 15% for 1 minute
+      meter_name: cpu_util
+      statistic: avg
+      period: 600
+      evaluation_periods: 1
+      threshold: 10
+      alarm_actions:
+        - {get_attr: [web_server_scaledown_policy, alarm_url]}
+      matching_metadata: {'metadata.user_metadata.stack': {get_param: "OS::stack_id"}}
+      comparison_operator: lt
+
+  haproxy:
+    type: haproxy.yaml
+    properties:
+      os_auth_url: { get_param: os_auth_url }
+      os_user: { get_param: os_user }
+      os_tenant: { get_param: os_tenant }
+      os_password: { get_param: os_password }
+      os_region: { get_param: os_region }
+      image: { get_param: haproxy_image }
+      flavor: { get_param: haproxy_flavor }
+      key_name: { get_param: haproxy_key_name }
+      network: { get_param: network }
+      stack_id: { get_param: "OS::stack_id" }
+
+outputs:
+  wordpress_server_names:
+    description: >
+      The wordpress server names
+    value: {get_attr: [asg, outputs_list, name]}
+
+  wordpress_server_first_addresses:
+    description: >
+      The first addresses acquired by the wordpress servers
+    value: {get_attr: [asg, outputs_list, first_address]}
+
+  haproxy_server_name:
+    description: >
+      The name of the HAProxy server
+    value: {get_attr: [haproxy, name]}
+
+  haproxy_server_first_address:
+    description: >
+      The first address acquired by the HAProxy server
+    value: {get_attr: [haproxy, first_address]}
+

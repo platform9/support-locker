@@ -1,0 +1,164 @@
+heat_template_version: 2015-10-15
+
+description: Template that installs a HAProxy server.
+
+parameters:
+  os_auth_url:
+    type: string
+    description: FQDN of the openstack controller e.g. company.platform9.com
+  os_user:
+    type: string
+    description: Openstack user name
+  os_tenant:
+    type: string
+    description: Openstack tenant name
+  os_region:
+    type: string
+    description: Openstack region name
+  os_password:
+    type: string
+    description: Openstack password
+    hidden: true
+  stack_id:
+    type: string
+    description: The stack to be load balanced by this server
+  image:
+    type: string
+    description: Image used for servers
+  key_name:
+    type: string
+    description: SSH key to connect to the servers
+  flavor:
+    type: string
+    description: flavor used by the servers
+  network:
+    type: string
+    description: Network used by the server
+
+resources:
+  haproxy_instance:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - network: { get_param: network }
+      config_drive: true
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/bash -ex
+            # HAProxy install
+            apt-get update
+            apt-get -y install build-essential python python-dev python-virtualenv supervisor haproxy
+
+            # HAProxy config
+            sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy
+            sed -i $'s/\tmode\thttp/\tmode\ttcp/' /etc/haproxy/haproxy.cfg
+            sed -i $'s/\toption\thttplog/\toption\ttcplog/' /etc/haproxy/haproxy.cfg
+            cat >>/etc/haproxy/haproxy.cfg <<EOF
+            frontend www
+                bind *:80
+                default_backend wordpress-backend
+
+            backend wordpress-backend
+                balance roundrobin
+                mode tcp
+            EOF
+            cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy_base.cfg
+            echo "[]" >> /etc/haproxy/servers.json
+
+            # HAProxy updater dependencies
+            pip install python-heatclient==0.2.12
+            pip install python-keystoneclient==0.11.2
+            # Keystone client brings in wrong version of oslo.serialization
+            pip install oslo.serialization==1.6.0
+            pip install oslo.utils==1.9.0
+            pip install oslo.config==1.9.3
+
+            # HAProxy updater
+            cat >>/etc/haproxy/update.py <<EOF
+            #!/usr/bin/env python
+            import json
+            import subprocess
+
+            from keystoneclient.v2_0.client import Client as KsClient
+            from heatclient.client import Client as HeatClient
+
+            # Files to be used
+            current_servers_file = '/etc/haproxy/servers.json'
+            base_config_file = '/etc/haproxy/haproxy_base.cfg'
+            config_file = '/etc/haproxy/haproxy.cfg'
+
+            # Set up Heat client
+            username = '$os_user'
+            tenant_name = '$os_tenant'
+            region_name = '$os_region'
+            password = '$os_password'
+            auth_url = '$os_auth_url'
+            stack_id = '$stack_id'
+
+            ks_client = KsClient(username=username, password=password,
+                                 tenant_name=tenant_name, auth_url=auth_url,
+                                 verify=False)
+
+            endpoints = ks_client.service_catalog.get_endpoints()
+
+            heat_endpoints = endpoints['orchestration']
+            heat_url = next(endpt['publicURL'] for endpt in heat_endpoints
+                            if endpt['region'] == region_name)
+
+            heat_client = HeatClient('1',
+                                     endpoint=heat_url,
+                                     token=ks_client.auth_token,
+                                     verify=False,
+                                     insecure=True)
+
+            # Get updated list of server IPs
+            outputs = heat_client.stacks.get(stack_id).outputs
+            updated_server_ips = next(output['output_value']
+                                      for output in outputs
+                                      if output['output_key'] == 'wordpress_server_first_addresses')
+            # The server IP can be blank if it is not yet discovered
+            updated_server_ips = [ip for ip in updated_server_ips if ip]
+
+            # Get list of current server IPs
+            with open(current_servers_file, 'r') as f:
+                current_server_ips = json.load(f)
+
+            # Update the files if needed
+            if set(updated_server_ips) != set(current_server_ips):
+                with open(current_servers_file, 'w') as f:
+                    f.write(json.dumps(updated_server_ips))
+
+                with open(config_file, 'w') as config, open(base_config_file, 'r') as base_config:
+                    config.write(base_config.read())
+                    for idx, server_ip in enumerate(updated_server_ips):
+                        config.write('    server server-{0} {1}:80 check\n'
+                                     .format(idx, server_ip))
+                subprocess.check_call(['service', 'haproxy', 'restart'])
+            EOF
+
+            # Update HAProxy in a cron job
+            crontab -l > _crontab || true
+            echo "* * * * * python /etc/haproxy/update.py >> /var/log/haproxy_update.log 2>&1" >> _crontab
+            crontab < _crontab
+            rm -f _crontab
+          params:
+            $os_user: { get_param: os_user }
+            $os_tenant: { get_param: os_tenant }
+            $os_password: { get_param: os_password }
+            $os_auth_url: { get_param: os_auth_url }
+            $os_region: { get_param: os_region }
+            $stack_id: { get_param: stack_id }
+
+outputs:
+  name:
+    description: Name of the HAProxy instance.
+    value: { get_attr: [haproxy_instance, name] }
+
+  first_address:
+    description: The IP address of the HAProxy instance.
+    value: { get_attr: [haproxy_instance, first_address] }

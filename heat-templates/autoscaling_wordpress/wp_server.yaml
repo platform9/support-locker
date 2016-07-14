@@ -1,0 +1,90 @@
+heat_template_version: 2015-10-15
+
+description: A wordpress server
+
+parameters:
+  image:
+    type: string
+    description: Image used for servers
+  key_name:
+    type: string
+    description: SSH key to connect to the servers
+  flavor:
+    type: string
+    description: flavor used by the servers
+  network:
+    type: string
+    description: Network used by the server
+  metadata:
+    type: json
+
+resources:
+  db_root_password:
+    type: OS::Heat::RandomString
+
+  db_wordpress_password:
+    type: OS::Heat::RandomString
+
+  server:
+    type: OS::Nova::Server
+    properties:
+      flavor: { get_param: flavor }
+      image: { get_param: image }
+      key_name: { get_param: key_name }
+      networks:
+        - network: { get_param: network }
+      metadata: { get_param: metadata }
+      config_drive: true
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            $db_root_password: {get_attr: [db_root_password, value]}
+            $db_wordpress_password: {get_attr: [db_wordpress_password, value]}
+          template: |
+            #!/bin/bash -ex
+            # Set mysql password to avoid interactive prompt
+            echo mysql-server mysql-server/root_password password $db_root_password | debconf-set-selections
+            echo mysql-server mysql-server/root_password_again password $db_root_password | debconf-set-selections
+
+            # Install packages
+            apt-get update
+            apt-get -y install apache2 mysql-server php5-mysql php5 libapache2-mod-php5 php5-mcrypt
+
+            # Prefer php files for wordpress
+            sed 's/index.html/index.php index.html/g' -i /etc/apache2/mods-enabled/dir.conf
+
+            # Set up mysql
+            mysql_install_db
+            mysql -u root -p$db_root_password << EOF
+            CREATE DATABASE wordpress;
+            CREATE USER wordpressuser@localhost IDENTIFIED BY '$db_wordpress_password';
+            GRANT ALL PRIVILEGES ON wordpress.* TO wordpressuser@localhost;
+            FLUSH PRIVILEGES;
+            EOF
+
+            # Set up wordpress
+            wget -q -O- http://wordpress.org/latest.tar.gz | tar zxf -
+            cd wordpress
+            cp wp-config-sample.php wp-config.php
+            sed 's/database_name_here/wordpress/g' -i wp-config.php
+            sed 's/username_here/wordpressuser/g' -i wp-config.php
+            sed "s/password_here/$db_wordpress_password/g" -i wp-config.php
+            cd -
+            rsync -a wordpress/ /var/www/html/
+            cd /var/www/html
+            chown -R ubuntu:www-data *
+            mkdir /var/www/html/wp-content/uploads
+            chown -R :www-data /var/www/html/wp-content/uploads
+
+            # Restart the server
+            service apache2 restart
+
+outputs:
+  name:
+    description: Name of the wordpress instance.
+    value: { get_attr: [server, name] }
+  first_address:
+    description: First IP Address of the wordpress instance
+    value: { get_attr: [server, first_address] }
+
