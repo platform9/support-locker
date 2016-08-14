@@ -1,0 +1,422 @@
+#!/bin/bash
+
+# Bash Colors
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[1;34m'
+MAGENTA='\033[1;35m'
+CYAN='\033[1;36m'
+NC='\033[0m'
+
+function validCidr() {
+  grep -E -q '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$' <<< "$1"
+}
+
+function createVPC() { 
+  if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
+    printf "${RED}Too few arguments${NC}\n" >&2
+    usage
+    exit 1
+  fi
+  projectName=$1
+  userEmail=$2
+  if [[ "$userEmail" != ?*@?*.?* ]]; then
+    printf "${RED}The username must be a valid email address${NC}\n" >&2
+    usage
+    exit 1
+  fi
+  
+  netCidr="$3"
+  validCidr $netCidr
+  if [[ $? -ne 0 ]]; then
+    printf "${RED}Invalid Network CIDR${NC}\n" >&2
+    usage
+    exit 1
+  fi
+  
+  o1=`echo $netCidr |  awk -F'.' '{print $1}'`
+  o2=`echo $netCidr |  awk -F'.' '{print $2}'`
+  o3=`echo $netCidr |  awk -F'.' '{print $3}'`
+  o4=`echo $netCidr |  awk -F'.' '{print $4}'`
+  netGw="$o1.$o2.$o3.$(($o4 + 1))"
+  
+  echo "Setting Login Credentials..."
+  if [ ! -f ~/.openstack/admin.rc ]; then
+    printf "${RED}OpenStack RC couldn't be found.${NC}\n" >&2
+    printf "${YELLOW}Please move your OpenStack RC to $HOME/.openstack/admin.rc, or use the vpc config option.${NC}\n" >&2
+    usage
+    exit 1
+  fi
+
+  source ~/.openstack/admin.rc
+  
+  if [ -z "$OS_USERNAME" ] || [ -z "$OS_TENANT_NAME" ] || \
+     [ -z "$OS_PASSWORD" ] || [ -z "$OS_REGION_NAME" ] || \
+     [ -z "$OS_AUTH_URL" ]; then
+    printf "${RED}Some parameters are missing in your $HOME/.openstack/admin.rc${NC}\n" >&2
+    exit 1
+  fi
+
+  echo "Gathering Information..."
+  baseUrl=`echo $OS_AUTH_URL | awk -F'/' '{print $3}'`
+  os_admin_user=`openstack user list | grep " $OS_USERNAME " | \
+    awk -F' ' '{print $2}'`
+  os_role=`openstack role list | grep " _member_ " | \
+    awk -F' ' '{print $2}'`
+  os_admin_role=`openstack role list | grep " admin " | \
+    awk -F' ' '{print $2}'`
+  os_ext_net=`neutron net-external-list | grep "\." | grep "\/" | \
+    awk -F' ' '{print $2}'`
+  os_project=`openstack project show $projectName | grep " id "| \
+    awk -F' ' '{print $4}'`
+  
+  if [ -z "$os_project" ]; then
+    echo "Creating project: $projectName"
+    os_project=`openstack project create $projectName | grep  " id " | \
+      awk -F' ' '{print $4}'`
+  else
+      printf "${RED}Project \"$projectName\" already exists!${NC}\n" >&2
+      printf "${YELLOW}Please try again with a differnet project name.${NC}\n" >&2
+      exit 1
+  fi
+
+  os_user=`openstack user show $userEmail | grep " id "| \
+    awk -F' ' '{print $4}'`
+
+  if [ -z "$os_user" ]; then
+    echo "Creating user: $userEmail"
+    os_user=`openstack user create \
+      --email "$userEmail" \
+      --password "$userEmail" \
+      --enable \
+      "$userEmail" | \
+      grep " id "| awk -F' ' '{print $4}'`
+  else
+    skipPasswordReset="True"
+    printf "${CYAN}User \"$userEmail\" already exsits, skipping user creation.${NC}\n"
+  fi
+
+  echo "Granting $OS_USERNAME 'Admin' rights to $projectName"
+  setAdminRole=`openstack role add \
+    --user $os_admin_user \
+    --project $os_project \
+    $os_admin_role`
+  
+  echo "Granting $userEmail 'Self Service' rights to $projectName"
+  setUserRole=`openstack role add \
+    --user $os_user \
+    --project $os_project \
+    $os_role`
+  
+  export OS_TENANT_NAME=$projectName
+
+  os_token=`openstack token issue | grep id | awk -F' ' 'NR==1{print $4}'`
+  
+  echo "Setting 'Compute' quota to unlimited..."
+  computeQuota=`curl -s "https://$baseUrl/nova/v2/$os_project/os-quota-sets/$os_project" \
+    -X PUT \
+    -H 'Content-Type: application/json;charset=UTF-8' \
+    -H 'Accept: application/json, text/plain, */*' \
+    -H "X-Auth-Token: $os_token" \
+    -d '{"quota_set":{"cores":-1,"root_gb":-1,"ram":-1,"instances":-1}}'`
+
+  echo "Setting 'Block Storage' quota to unlimited..."
+  blockQuota=`curl -s "https://$baseUrl/cinder/v2/$os_project/os-quota-sets/$os_project" \
+    -X PUT \
+    -H 'Content-Type: application/json;charset=UTF-8' \
+    -H 'Accept: application/json, text/plain, */*' \
+    -H "X-Auth-Token: $os_token" \
+    -d '{"quota_set":{"gigabytes":-1,"volumes":-1,"snapshots":-1}}'`
+
+  echo "Setting 'Network' quota to unlimited..."
+  networkQuota=`curl -s "https://$baseUrl/neutron/v2.0/quotas/$os_project" \
+    -X PUT \
+    -H 'Content-Type: application/json;charset=UTF-8' \
+    -H 'Accept: application/json, text/plain, */*' \
+    -H "X-Auth-Token: $os_token" \
+    -d '{"quota":{"network":-1,"subnet":-1,"router":-1,"port":-1,"floatingip":-1,"security_group":-1,"security_group_rule":-1}}'`
+  
+  echo "Creating tenant network..."  
+  os_net=`neutron net-create "$projectName-Network" | grep " id " | \
+    awk -F' ' '{print $4}'`
+  
+  echo "Creating subnet for tenant network..."
+  os_subnet=`neutron subnet-create \
+    --ip-version 4 \
+    --gateway "$netGW" \
+    --enable-dhcp \
+    --dns-nameserver 8.8.8.8 \
+    --dns-nameserver 8.8.4.4 \
+    --name "$projectName-$netCidr" \
+    "$os_net" "$netCidr" | \
+    grep " id " | awk -F' ' '{print $4}'`
+  
+  echo "Creating router tenant router..."
+  os_router=`neutron router-create "$projectName-Router" | grep " id " | \
+    awk -F' ' '{print $4}'`
+  
+  echo "Attaching router to external network..."
+  attachToExt=`neutron router-gateway-set $os_router $os_ext_net`
+  
+  echo "Attaching router to tenant network..."
+  attachToInt=`neutron router-interface-add $os_router $os_subnet`
+  
+  echo "Create floating ip..."
+  floatingIp=`neutron floatingip-create $os_ext_net`
+  
+  echo "Create Security Group..."
+  secGroupName="$projectName-Allow_SSH_ICMP"
+  createSecGroup=`neutron security-group-create \
+    --description "Allow inbound SSH & ICMP" \
+    $secGroupName`
+  
+  echo "Add ICMP rule to Security Group..."
+  createIcmpRule=`neutron security-group-rule-create \
+    --protocol icmp \
+    --direction ingress \
+    $secGroupName`
+  
+  echo "Add SSH rule to Security Group..."
+  createSshRule=`neutron security-group-rule-create \
+    --protocol tcp \
+    --port-range-min 22 \
+    --port-range-max 22 \
+    --direction ingress \
+    $secGroupName`
+  
+  if [ "$skipPasswordReset" != "True" ]; then
+    echo "Sending password reset to $userEmail"
+    curl 'https://'$baseUrl'/clemency/request' \
+      -H 'Accept: application/json, text/plain, */*' \
+      --data-binary '{"username":"'$userEmail'"}'
+  fi
+  
+  echo "Done!"
+}
+
+function addUser {
+  if [ -z "$1" ] || [ -z "$2" ]; then
+    printf "${RED}Too few arguments${NC}\n" >&2
+    usage
+    exit 1
+  fi
+  projectName=$1
+  userEmail=$2
+  
+  echo "Setting Login Credentials..."
+  if [ ! -f ~/.openstack/admin.rc ]; then
+    printf "${RED}OpenStack RC couldn't be found.${NC}\n" >&2
+    printf "${YELLOW}Please move your OpenStack RC to $HOME/.openstack/admin.rc, or use the vpc config option.${NC}\n" >&2
+    usage
+    exit 1
+  fi
+
+  source ~/.openstack/admin.rc
+  
+  if [ -z "$OS_USERNAME" ] || [ -z "$OS_TENANT_NAME" ] || \
+     [ -z "$OS_PASSWORD" ] || [ -z "$OS_REGION_NAME" ] || \
+     [ -z "$OS_AUTH_URL" ]; then
+    printf "${RED}Some parameters are missing in your " \
+      "$HOME/.openstack/admin.rc${NC}\n" >&2
+    exit 1
+  fi
+
+  echo "Gathering Information..."
+  os_role=`openstack role list | grep " _member_ " | \
+    awk -F' ' '{print $2}'`
+  os_project=`openstack project list | grep  " $projectName " | \
+    awk -F' ' '{print $2}'`
+  os_user=`openstack user show $userEmail | grep " id "| \
+    awk -F' ' '{print $4}'`
+
+  if [ -z "$os_user" ]; then
+    echo "Creating user: $userEmail"
+    os_user=`openstack user create \
+      --email "$userEmail" \
+      --password "$userEmail" \
+      --enable \
+      "$userEmail" | \
+      grep " id "| awk -F' ' '{print $4}'`
+  else
+    skipPasswordReset="True"
+    printf "${CYAN}User \"$userEmail\" already exsits, skipping user creation.${NC}\n"
+  fi
+
+  echo "Granting $userEmail 'Self Service' rights to $projectName"
+  setUserRole=`openstack role add \
+    --user $os_user \
+    --project $os_project \
+    $os_role`
+  if [ "$skipPasswordReset" != "True" ]; then
+    echo "Sending password reset to $userEmail"
+    curl 'https://'$baseUrl'/clemency/request' \
+      -H 'Accept: application/json, text/plain, */*' \
+      --data-binary '{"username":"'$userEmail'"}'
+  fi
+  echo "Done!"
+
+}
+
+function remUser {
+  if [ -z "$1" ] || [ -z "$2" ]; then
+    printf "${RED}Too few arguments${NC}\n" >&2
+    usage
+    exit 1
+  fi
+  projectName=$1
+  userEmail=$2
+  
+  echo "Setting Login Credentials..."
+  if [ ! -f ~/.openstack/admin.rc ]; then
+    printf "${RED}OpenStack RC couldn't be found.${NC}\n" >&2
+    printf "${YELLOW}Please move your OpenStack RC to $HOME/.openstack/admin.rc, or use the vpc config option.${NC}\n" >&2
+    usage
+    exit 1
+  fi
+
+  source ~/.openstack/admin.rc
+  
+  if [ -z "$OS_USERNAME" ] || [ -z "$OS_TENANT_NAME" ] || \
+     [ -z "$OS_PASSWORD" ] || [ -z "$OS_REGION_NAME" ] || \
+     [ -z "$OS_AUTH_URL" ]; then
+    printf "${RED}Some parameters are missing in your " \
+      "$HOME/.openstack/admin.rc${NC}\n" >&2
+    exit 1
+  fi
+  
+  echo "Gathering Information..."
+  
+  os_user=`openstack user show $userEmail | grep " id "| \
+    awk -F' ' '{print $4}'`
+
+  if [ -z "$os_user" ]; then
+    printf "${RED}User \"$userEmail\" cannot be found!${NC}\n" >&2
+    exit 1
+  fi
+
+  os_role=`openstack role list | grep " _member_ " | \
+    awk -F' ' '{print $2}'`
+  
+  os_project=`openstack project list | grep  " $projectName " | \
+    awk -F' ' '{print $2}'`
+  
+  echo "Removing $userEmail 'Self Service' rights from $projectName"
+  setUserRole=`openstack role remove \
+    --user $os_user \
+    --project $os_project \
+    $os_role`
+  echo "Done!"
+}
+
+function usage() {
+ echo '
+  Usage:
+
+  vpc new <project name> <user email> <network CIDR>
+      * Creates a new VPC and new user.
+      * If user already exists, the existing user will be added to the VPC.
+  
+  vpc add <project name> <user email>
+      * Creates a new user and adds them to a VPC.
+      * If user already exists, the existing user will be added to the VPC.
+  
+  vpc remove <project name> <user email>
+      * Removes a user from a VPC.
+
+  vpc config <path to openstack.rc>
+      * Configure this tool to use the OpenStack RC of your choice.
+
+  vpc about
+      * Displays information about this tool
+
+  vpc help
+      * Displays this help screen
+  
+      '
+}
+
+function config() {
+  if [ -z "$1" ]; then
+    printf "${RED}Too few arguments${NC}\n" >&2
+    usage
+    exit 1
+  fi
+  configFile=$1
+  echo "Reading Config File..."
+  if [ ! -f $configFile ]; then
+    printf "${RED}The file specifed does not exist${NC}\n" >&2
+    usage
+    exit 1
+  fi
+
+  echo "Checking Config Settings..."
+  source $1
+  
+  if [ -z "$OS_USERNAME" ] || [ -z "$OS_TENANT_NAME" ] || \
+     [ -z "$OS_PASSWORD" ] || [ -z "$OS_REGION_NAME" ] || \
+     [ -z "$OS_AUTH_URL" ]; then
+    printf "${RED}Some parameters are missing in config file \"$configFile\"${NC}\n" >&2
+    exit 1
+  else
+    echo "Config is valid..."
+    makeOpenstackDir=`mkdir -p ~/.openstack`
+    echo "Placing config in config directory..."
+    copyOpenstackRc=`cp $configFile ~/.openstack/admin.rc`
+  fi
+  echo "Done."
+}
+
+function about() {
+printf '\033[1;34m       __________\033[0m.__          __    _____                    \033[1;34m________         \n' >&2
+printf '\033[1;34m       \______   \\\033[0m  | _____ _/  |__/ ____\___________  _____\033[1;34m/   __   \        \n' >&2
+printf '\033[1;34m        |     ___/\033[0m  | \__  \\\   __\   __\/  _ \_  __ \/     \033[1;34m\____    /        \n' >&2
+printf '\033[1;34m        |    |\033[0m   |  |__/ __ \|  |  |  | (  <_> )  | \/  Y Y  \\\033[1;34m /    /         \n' >&2
+printf '\033[1;34m        |____|\033[0m   |____(______/__|  |__|  \____/|__|  |__|_|__/\033[1;34m/____/          \n' >&2
+printf '\033[1;34m       ____   ____\033[0m___________________  \033[1;34m ___________\033[0m            __   \n' >&2
+printf '\033[1;34m       \   \ /   /\033[0m\______   \_   ___ \ \033[1;34m \__    ___/\033[0m___   ____ |  |  \n' >&2
+printf '\033[1;34m        \   Y   /\033[0m  |     ___/    \  \/ \033[1;34m   |    |\033[0m /  _ \ /  _ \|  |  \n' >&2
+printf '\033[1;34m         \     /\033[0m   |    |   \     \____\033[1;34m   |    |\033[0m(  <_> |  <_> )  |__\n' >&2
+printf '\033[1;34m          \___/\033[0m    |____|    \________/\033[1;34m   |____|\033[0m \____/ \____/|____/\n' >&2
+echo '
+Version: v0.0.1:
+
+  This tool is inteded for a service provider to create VPCs (Virtual Private Clouds) for their customers.
+
+  A VPC consists of:
+    * One OpenStack project with an unlimted quota
+    * One OpenStack user assigned as a self service user to the project
+    * One VPC private network with a subnet
+    * One router attached to the public Internet and the VPC private network
+    * One Security Group that allows inbound SSH and ICMP traffic
+    * One Floating IP address to allow inbound communication to an instance
+  '
+}
+
+case "$1" in
+  new)
+    createVPC $2 $3 $4
+    ;;
+  add)
+    addUser $2  $3
+    ;;
+  remove)
+    remUser $2  $3
+    ;;
+  config)
+    config $2
+    ;;
+  about)
+    about
+    ;;
+  help)
+    usage
+    ;;
+  *)
+    if [ -z "$1" ]; then
+      printf "${RED}No parameter specified.${NC}\n" >&2
+    else
+      printf "${RED}$1 is not a valid parameter.${NC}\n" >&2
+    fi
+    usage
+esac
