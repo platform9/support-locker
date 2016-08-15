@@ -94,7 +94,7 @@ function createVPC() {
       grep " id "| awk -F' ' '{print $4}'`
   else
     skipPasswordReset="True"
-    printf "${CYAN}User \"$userEmail\" already exsits, skipping user creation.${NC}\n"
+    printf "${CYAN}User \"$userEmail\" already exsits, skipping user creation & password reset.${NC}\n"
   fi
 
   echo "Granting $OS_USERNAME 'Admin' rights to $projectName"
@@ -195,7 +195,7 @@ function createVPC() {
   echo "Done!"
 }
 
-function addUser {
+function addUser() {
   if [ -z "$1" ] || [ -z "$2" ]; then
     printf "${RED}Too few arguments${NC}\n" >&2
     usage
@@ -223,10 +223,18 @@ function addUser {
   fi
 
   echo "Gathering Information..."
+  os_project=`openstack project show $projectName | grep " id "| \
+    awk -F' ' '{print $4}'`
+  
+  if [ -z "$os_project" ]; then
+      printf "${RED}Project \"$projectName\" doesn't exists!${NC}\n" >&2
+      printf "${YELLOW}Please try again with a differnet project name.${NC}\n" >&2
+      exit 1
+  fi
+  
   os_role=`openstack role list | grep " _member_ " | \
     awk -F' ' '{print $2}'`
-  os_project=`openstack project list | grep  " $projectName " | \
-    awk -F' ' '{print $2}'`
+  
   os_user=`openstack user show $userEmail | grep " id "| \
     awk -F' ' '{print $4}'`
 
@@ -240,7 +248,7 @@ function addUser {
       grep " id "| awk -F' ' '{print $4}'`
   else
     skipPasswordReset="True"
-    printf "${CYAN}User \"$userEmail\" already exsits, skipping user creation.${NC}\n"
+    printf "${CYAN}User \"$userEmail\" already exsits, skipping user creation & password reset.${NC}\n"
   fi
 
   echo "Granting $userEmail 'Self Service' rights to $projectName"
@@ -258,7 +266,7 @@ function addUser {
 
 }
 
-function remUser {
+function remUser () {
   if [ -z "$1" ] || [ -z "$2" ]; then
     printf "${RED}Too few arguments${NC}\n" >&2
     usage
@@ -287,6 +295,15 @@ function remUser {
   
   echo "Gathering Information..."
   
+  os_project=`openstack project show $projectName | grep " id "| \
+    awk -F' ' '{print $4}'`
+  
+  if [ -z "$os_project" ]; then
+      printf "${RED}Project \"$projectName\" doesn't exists!${NC}\n" >&2
+      printf "${YELLOW}Please try again with a differnet project name.${NC}\n" >&2
+      exit 1
+  fi
+  
   os_user=`openstack user show $userEmail | grep " id "| \
     awk -F' ' '{print $4}'`
 
@@ -298,42 +315,12 @@ function remUser {
   os_role=`openstack role list | grep " _member_ " | \
     awk -F' ' '{print $2}'`
   
-  os_project=`openstack project list | grep  " $projectName " | \
-    awk -F' ' '{print $2}'`
-  
   echo "Removing $userEmail 'Self Service' rights from $projectName"
   setUserRole=`openstack role remove \
     --user $os_user \
     --project $os_project \
     $os_role`
   echo "Done!"
-}
-
-function usage() {
- echo '
-  Usage:
-
-  vpc new <project name> <user email> <network CIDR>
-      * Creates a new VPC and new user.
-      * If user already exists, the existing user will be added to the VPC.
-  
-  vpc add <project name> <user email>
-      * Creates a new user and adds them to a VPC.
-      * If user already exists, the existing user will be added to the VPC.
-  
-  vpc remove <project name> <user email>
-      * Removes a user from a VPC.
-
-  vpc config <path to openstack.rc>
-      * Configure this tool to use the OpenStack RC of your choice.
-
-  vpc about
-      * Displays information about this tool
-
-  vpc help
-      * Displays this help screen
-  
-      '
 }
 
 function config() {
@@ -368,18 +355,18 @@ function config() {
 }
 
 function about() {
-printf '\033[1;34m       __________\033[0m.__          __    _____                    \033[1;34m________         \n' >&2
-printf '\033[1;34m       \______   \\\033[0m  | _____ _/  |__/ ____\___________  _____\033[1;34m/   __   \        \n' >&2
-printf '\033[1;34m        |     ___/\033[0m  | \__  \\\   __\   __\/  _ \_  __ \/     \033[1;34m\____    /        \n' >&2
-printf '\033[1;34m        |    |\033[0m   |  |__/ __ \|  |  |  | (  <_> )  | \/  Y Y  \\\033[1;34m /    /         \n' >&2
-printf '\033[1;34m        |____|\033[0m   |____(______/__|  |__|  \____/|__|  |__|_|__/\033[1;34m/____/          \n' >&2
-printf '\033[1;34m       ____   ____\033[0m___________________  \033[1;34m ___________\033[0m            __   \n' >&2
-printf '\033[1;34m       \   \ /   /\033[0m\______   \_   ___ \ \033[1;34m \__    ___/\033[0m___   ____ |  |  \n' >&2
-printf '\033[1;34m        \   Y   /\033[0m  |     ___/    \  \/ \033[1;34m   |    |\033[0m /  _ \ /  _ \|  |  \n' >&2
-printf '\033[1;34m         \     /\033[0m   |    |   \     \____\033[1;34m   |    |\033[0m(  <_> |  <_> )  |__\n' >&2
-printf '\033[1;34m          \___/\033[0m    |____|    \________/\033[1;34m   |____|\033[0m \____/ \____/|____/\n' >&2
-echo '
-Version: v0.0.1:
+  printf '\033[1;34m       __________\033[0m.__          __    _____                    \033[1;34m________         \n' >&2
+  printf '\033[1;34m       \______   \\\033[0m  | _____ _/  |__/ ____\___________  _____\033[1;34m/   __   \        \n' >&2
+  printf '\033[1;34m        |     ___/\033[0m  | \__  \\\   __\   __\/  _ \_  __ \/     \033[1;34m\____    /        \n' >&2
+  printf '\033[1;34m        |    |\033[0m   |  |__/ __ \|  |  |  | (  <_> )  | \/  Y Y  \\\033[1;34m /    /         \n' >&2
+  printf '\033[1;34m        |____|\033[0m   |____(______/__|  |__|  \____/|__|  |__|_|__/\033[1;34m/____/          \n' >&2
+  printf '\033[1;34m       ____   ____\033[0m___________________  \033[1;34m ___________\033[0m            __   \n' >&2
+  printf '\033[1;34m       \   \ /   /\033[0m\______   \_   ___ \ \033[1;34m \__    ___/\033[0m___   ____ |  |  \n' >&2
+  printf '\033[1;34m        \   Y   /\033[0m  |     ___/    \  \/ \033[1;34m   |    |\033[0m /  _ \ /  _ \|  |  \n' >&2
+  printf '\033[1;34m         \     /\033[0m   |    |   \     \____\033[1;34m   |    |\033[0m(  <_> |  <_> )  |__\n' >&2
+  printf '\033[1;34m          \___/\033[0m    |____|    \________/\033[1;34m   |____|\033[0m \____/ \____/|____/\n' >&2
+  echo '
+  Version: v0.0.1:
 
   This tool is inteded for a service provider to create VPCs (Virtual Private Clouds) for their customers.
 
@@ -391,6 +378,33 @@ Version: v0.0.1:
     * One Security Group that allows inbound SSH and ICMP traffic
     * One Floating IP address to allow inbound communication to an instance
   '
+}
+
+function usage() {
+ echo '
+  Usage:
+
+  vpc new <project name> <user email> <network CIDR>
+      * Creates a new VPC and new user.
+      * If user already exists, the existing user will be added to the VPC.
+  
+  vpc add <project name> <user email>
+      * Creates a new user and adds them to a VPC.
+      * If user already exists, the existing user will be added to the VPC.
+  
+  vpc remove <project name> <user email>
+      * Removes a user from a VPC.
+
+  vpc config <path to openstack.rc>
+      * Configure this tool to use the OpenStack RC of your choice.
+
+  vpc about
+      * Displays information about this tool
+
+  vpc help
+      * Displays this help screen
+  
+      '
 }
 
 case "$1" in
