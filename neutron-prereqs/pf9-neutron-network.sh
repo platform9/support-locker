@@ -317,7 +317,7 @@ if [ $configNetworking == "y" ]; then
 		echo 'mtuSize='$mtuSize >> $hostProfileScriptName
 	fi
 fi
-tail -338 $0 >> $hostProfileScriptName
+tail -337 $0 >> $hostProfileScriptName
 
 echo "Installing Neutron prerequisites..."
 
