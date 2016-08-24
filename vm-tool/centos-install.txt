@@ -1,0 +1,17 @@
+# Install the epel yum repo and curl
+sudo yum install -y epel-release curl
+
+# Install pip and gcc
+sudo yum install -y python-pip python-devel gcc
+
+# Install OpenStack clients
+sudo pip install nova-adminclient python-ceilometerclient python-cinderclient python-glanceclient python-heatclient python-keystoneclient python-neutronclient python-novaclient python-openstackclient python-swiftclient
+
+# Download the VM Tool (or scp it to /usr/local/bin/vm)
+sudo curl -o /usr/local/bin/vm https://raw.githubusercontent.com/platform9/support-locker/master/vm-tool/vm
+
+# make the vm executable
+sudo chmod +x /usr/local/bin/vm
+
+# Cofigure the vm tool
+vm config <path to openstack.rc>
