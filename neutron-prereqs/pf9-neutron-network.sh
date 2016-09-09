@@ -292,7 +292,7 @@ fi
 
 hostProfileScriptName='./hostProfile.sh'
 
-head -121 $0 > $hostProfileScriptName
+head -123 $0 > $hostProfileScriptName
 echo "configNetworking=${configNetworking}" >> $hostProfileScriptName
 if [ $configNetworking == "y" ]; then
 	echo 'mgmtIp=$(getValidInput "Management IP Address: " "ipAddress")' >> $hostProfileScriptName
