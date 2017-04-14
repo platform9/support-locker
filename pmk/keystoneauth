@@ -1,0 +1,119 @@
+#!/usr/bin/python2
+
+# Copyright (c) 2017 Platform9 Systems Inc.
+# All Rights reserved
+
+import base64
+import getpass
+import httplib
+import json
+import optparse
+import sys
+import urlparse
+import re
+
+def do_request(action, host, relative_url, headers, body):
+    conn = httplib.HTTPSConnection(host)
+    body_json = json.JSONEncoder().encode(body)
+    conn.request(action, relative_url, body_json, headers)
+    response = conn.getresponse()
+    return conn, response
+
+def get_token_v3(host, username, password, tenant):
+    headers = { "Content-Type": "application/json" }
+    body = {
+        "auth":{
+            "identity": {
+                "methods": ["password"],
+                "password": {
+                    "user": {
+                        "name": username,
+                        "domain": {"id": "default"},
+                        "password": password
+                    }
+                }
+            },
+            "scope": {
+                "project": {
+                    "name": tenant,
+                    "domain": { "id": "default" }
+                }
+            }
+        }
+    }
+    conn, response = do_request("POST", host,
+            "/keystone/v3/auth/tokens?nocatalog",
+            headers, body)
+
+    if response.status not in (200, 201):
+        print("{0}: {1}".format(response.status, response.reason))
+        exit(1)
+
+    token = response.getheader('X-Subject-Token')
+    conn.close()
+    return token
+
+def validate_password(options):
+    if not options.pw:
+        options.pw = getpass.getpass()
+
+def write_token_to_kconfig(kconfig_file, token):
+    try:
+        with open(kconfig_file, 'r') as source:
+            contents = source.read()
+    except EnvironmentError:
+        print "Unable to read contents of kubeconfig file %s." \
+              " Not writing to file." % kconfig_file
+        return
+    # Replace old token with new one
+    new_contents = re.sub(r'token:.*',r'token: %s' % token, contents)
+    # Write to file
+    try:
+        with open(kconfig_file, 'w') as dest:
+            dest.write(new_contents)
+        print "Token updated in kubeconfig file %s." % kconfig_file
+    except EnvironmentError:
+        print "Unable to write kubeconfig to file %s" % kconfig_file
+
+def main():
+    parser = optparse.OptionParser(usage="%prog --account_endpoint <endpoint> "
+            "--region <region> --user <user> [--password <password>] [--tenant "
+            "<tenant>] [--kubeconfig <kubeconfig file>]")
+    parser.add_option('--account_endpoint', dest="endpoint", action="store",
+            help="Account endpoint for the customer. Example: acme.platform9.net")
+    parser.add_option('--region', dest="region", action="store",
+            help="Region from where the installer needs to be downloaded")
+    parser.add_option('--user', dest="user", action="store",
+            help="Platform9 user account to use to retrieve the installer")
+    parser.add_option('--password', dest="pw", action="store", default=None,
+            help="User account password. Will be prompted, if not provided "
+            "during script invocation")
+    parser.add_option('--tenant', dest="tenant", action="store",
+            default="service", help="Tenant to use for the user account. "
+            "Defaults to 'service' tenant")
+    parser.add_option('--kubeconfig', dest="kconfig_file", action="store",
+            help="Specify kubeconfig file with full path. Token will " \
+                 "also be written to the file. Please note that if you use " \
+                 "contexts in your kubeconfig, this utility will clobber your " \
+                 "your kubeconfig file. Do not use this flag. Instead copy " \
+                 "paste the token manually.",
+            default='')
+
+    options, remainder = parser.parse_args()
+    if not (options.endpoint and options.region and
+            options.user):
+        print "ERROR: Missing arguments"
+        parser.print_usage()
+        sys.exit(1)
+
+    validate_password(options)
+    token = get_token_v3(options.endpoint, options.user,
+                         options.pw, options.tenant)
+    print "User token: %s" % token
+    if options.kconfig_file:
+        write_token_to_kconfig(options.kconfig_file, token)
+
+if __name__ == "__main__":
+    main()
+
+
