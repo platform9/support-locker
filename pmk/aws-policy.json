@@ -4,11 +4,11 @@
         {
             "Effect": "Allow",
             "Action": [
-                "ec2:AttachInternetGateway",
                 "ec2:AllocateAddress",
+                "ec2:AssociateRouteTable",
+                "ec2:AttachInternetGateway",
                 "ec2:AuthorizeSecurityGroupEgress",
                 "ec2:AuthorizeSecurityGroupIngress",
-                "ec2:AssociateRouteTable",
                 "ec2:CreateInternetGateway",
                 "ec2:CreateNatGateway",
                 "ec2:CreateRoute",
@@ -25,6 +25,7 @@
                 "ec2:DeleteSubnet",
                 "ec2:DeleteTags",
                 "ec2:DeleteVpc",
+                "ec2:DescribeAccountAttributes",
                 "ec2:DescribeAddresses",
                 "ec2:DescribeAvailabilityZones",
                 "ec2:DescribeImages",
@@ -40,6 +41,7 @@
                 "ec2:DescribeSubnets",
                 "ec2:DescribeVpcAttribute",
                 "ec2:DescribeVpcClassicLink",
+                "ec2:DescribeVpcClassicLinkDnsSupport",
                 "ec2:DescribeVpcs",
                 "ec2:DetachInternetGateway",
                 "ec2:DisassociateRouteTable",
@@ -69,6 +71,7 @@
                 "iam:GetInstanceProfile",
                 "iam:GetRole",
                 "iam:GetRolePolicy",
+                "iam:GetUser",
                 "iam:ListInstanceProfilesForRole",
                 "iam:PassRole",
                 "iam:PutRolePolicy",
@@ -123,8 +126,10 @@
                 "autoscaling:DeleteTags",
                 "autoscaling:DescribeAutoScalingGroups",
                 "autoscaling:DescribeLaunchConfigurations",
+                "autoscaling:DescribeScalingActivities",
                 "autoscaling:DetachLoadBalancers",
-                "autoscaling:UpdateAutoScalingGroup"
+                "autoscaling:UpdateAutoScalingGroup",
+                "elasticloadbalancing:DescribeInstanceHealth"
             ],
             "Resource": [
                 "*"
