@@ -1,0 +1,16 @@
+#Example of role binding where pod reader role is assigned to 
+#a specific user. This binding is tied to a particualr namespace
+#Therefore user jane would only be able to view pods in the default namespace.
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: pod-reader-rb-default 
+  namespace: default 
+subjects:
+   - kind: User
+     name: jane 
+roleRef:
+  kind: ClusterRole
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+

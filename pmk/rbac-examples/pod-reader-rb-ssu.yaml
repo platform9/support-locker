@@ -1,0 +1,16 @@
+#Example of role binding where pod reader role is assigned to 
+#a special group called ssu_users. All users with _member_ role
+#for a project are by default part of this group. Therefore this role binding 
+#allows all ssu users to view pods across all namespaces in the cluster.
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: pod-reader-rb-ssu
+subjects:
+   - kind: Group
+     name: ssu_users 
+roleRef:
+  kind: ClusterRole
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+

@@ -1,0 +1,11 @@
+#Creates a cluster role that allows users to view pods
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: pod-reader
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+    verbs: ["get", "list", "watch"]
+
