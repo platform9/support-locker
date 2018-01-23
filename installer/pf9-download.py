@@ -1,11 +1,16 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 import getpass
-import httplib
 import json
 import optparse
 import sys
-import urlparse
+
+if sys.version_info.major == 2:
+    import httplib
+    import urlparse
+elif sys.version_info.major == 3:
+    from http import client as httplib
+    from urllib import parse as urlparse
 
 
 def do_request(action, host, relative_url, headers, body):
@@ -41,7 +46,7 @@ def download_installer(url, token, cookie, installer_name):
     bytes_read = 0
 
     # writes the file in the current working directory
-    installer_file = open(installer_name, 'w')
+    installer_file = open(installer_name, 'wb')
 
     while True:
         body = response.read(512 * 1024)
@@ -108,7 +113,8 @@ def get_package_info_from_token(host, token, region):
         print("{0}: {1}".format(response.status, response.reason))
         exit(1)
 
-    response_body = json.loads(response.read())
+    response_text = response.read().decode('utf-8')
+    response_body = json.loads(response_text)
     service_id = response_body['services'][0]['id']
     conn.close()
 
@@ -120,7 +126,8 @@ def get_package_info_from_token(host, token, region):
         print("{0}: {1}".format(response.status, response.reason))
         exit(1)
 
-    response_body = json.loads(response.read())
+    response_text = response.read().decode('utf-8')
+    response_body = json.loads(response_text)
     for endpoint in response_body['endpoints']:
         if endpoint['region'] == region:
             if endpoint['interface'] == 'internal':
@@ -135,7 +142,8 @@ def get_package_info_from_token(host, token, region):
         print("{0}: {1}".format(response.status, response.reason))
         exit(1)
 
-    response_body = json.loads(response.read())
+    response_text = response.read().decode('utf-8')
+    response_body = json.loads(response_text)
     cookie_url = response_body['links']['token2cookie']
     conn.close()
 
@@ -155,7 +163,8 @@ def get_package_info_from_token(host, token, region):
         print("{0}: {1}".format(response.status, response.reason))
         exit(1)
 
-    response_body = json.loads(response.read())
+    response_text = response.read().decode('utf-8')
+    response_body = json.loads(response_text)
     deb_installer = response_body['links']['deb_install']
     rpm_installer = response_body['links']['rpm_install']
     conn.close()
