@@ -1,6 +1,5 @@
 #!/usr/bin/python2
 
-import base64
 import getpass
 import httplib
 import json
@@ -18,18 +17,17 @@ def do_request(action, host, relative_url, headers, body):
 
 
 def download_report(bytes_so_far, total_size, installer_name):
-   percent = float(bytes_so_far) / total_size
-   percent = round(percent*100, 2)
-   sys.stdout.write("{0}: Downloaded {1} of {2} bytes {3:.2f}%\r".format(
-               installer_name, bytes_so_far, total_size, percent))
+    percent = float(bytes_so_far) / total_size
+    percent = round(percent * 100, 2)
+    sys.stdout.write("{0}: Downloaded {1} of {2} bytes {3:.2f}%\r".format(
+        installer_name, bytes_so_far, total_size, percent))
 
-   if bytes_so_far >= total_size:
-      sys.stdout.write('\n')
+    if bytes_so_far >= total_size:
+        sys.stdout.write('\n')
 
 
 def download_installer(url, token, cookie, installer_name):
-    headers = { "X-Auth-Token": token,
-                "cookie": cookie}
+    headers = {"X-Auth-Token": token, "cookie": cookie}
     body = ""
 
     _, net_location, path, _, _ = urlparse.urlsplit(url)
@@ -43,7 +41,7 @@ def download_installer(url, token, cookie, installer_name):
     bytes_read = 0
 
     # writes the file in the current working directory
-    f = open(installer_name, 'w')
+    installer_file = open(installer_name, 'w')
 
     while True:
         body = response.read(512 * 1024)
@@ -52,17 +50,17 @@ def download_installer(url, token, cookie, installer_name):
         if not body:
             break
 
-        f.write(body)
+        installer_file.write(body)
         download_report(bytes_read, total_size, installer_name)
 
-    f.close()
+    installer_file.close()
     conn.close()
 
 
 def get_token_v3(host, username, password, tenant):
-    headers = { "Content-Type": "application/json" }
+    headers = {"Content-Type": "application/json"}
     body = {
-        "auth":{
+        "auth": {
             "identity": {
                 "methods": ["password"],
                 "password": {
@@ -76,14 +74,14 @@ def get_token_v3(host, username, password, tenant):
             "scope": {
                 "project": {
                     "name": tenant,
-                    "domain": { "id": "default" }
+                    "domain": {"id": "default"}
                 }
             }
         }
     }
     conn, response = do_request("POST", host,
-            "/keystone/v3/auth/tokens?nocatalog",
-            headers, body)
+                                "/keystone/v3/auth/tokens?nocatalog",
+                                headers, body)
 
     if response.status not in (200, 201):
         print("{0}: {1}".format(response.status, response.reason))
@@ -99,12 +97,13 @@ def get_package_info_from_token(host, token, region):
     out = {}
 
     headers = {
-            "Content-Type": "application/json",
-            "X-Auth-Token": token
-            }
+        "Content-Type": "application/json",
+        "X-Auth-Token": token
+    }
 
     conn, response = do_request("GET", host,
-            "/keystone_admin/v3/services?type=regionInfo", headers, {})
+                                "/keystone/v3/services?type=regionInfo",
+                                headers, {})
     if response.status not in (200, 201):
         print("{0}: {1}".format(response.status, response.reason))
         exit(1)
@@ -113,20 +112,21 @@ def get_package_info_from_token(host, token, region):
     service_id = response_body['services'][0]['id']
     conn.close()
 
-    conn, response = do_request("GET", host,
-            "/keystone_admin/v3/endpoints?service_id={0}".format(service_id),
-            headers, {})
+    conn, response = do_request(
+        "GET", host,
+        "/keystone/v3/endpoints?service_id={0}".format(service_id), headers,
+        {})
     if response.status not in (200, 201):
         print("{0}: {1}".format(response.status, response.reason))
         exit(1)
 
     response_body = json.loads(response.read())
-    for ep in response_body['endpoints']:
-        if ep['region'] == region:
-            if ep['interface'] == 'internal':
-                internal_url = ep['url']
-            elif ep['interface'] == 'public':
-                public_url = ep['url']
+    for endpoint in response_body['endpoints']:
+        if endpoint['region'] == region:
+            if endpoint['interface'] == 'internal':
+                internal_url = endpoint['url']
+            elif endpoint['interface'] == 'public':
+                public_url = endpoint['url']
     conn.close()
 
     _, net_location, path, _, _ = urlparse.urlsplit(public_url)
@@ -161,12 +161,12 @@ def get_package_info_from_token(host, token, region):
     conn.close()
 
     out = {
-            'cookie': cookie,
-            'internal_url': internal_url,
-            'public_url': public_url,
-            'deb_installer': deb_installer,
-            'rpm_installer': rpm_installer
-            }
+        'cookie': cookie,
+        'internal_url': internal_url,
+        'public_url': public_url,
+        'deb_installer': deb_installer,
+        'rpm_installer': rpm_installer
+    }
 
     return out
 
@@ -177,9 +177,9 @@ def get_installer(options):
 
     info = get_package_info_from_token(options.endpoint, token, options.region)
     if options.platform == 'debian':
-       package_url = info['deb_installer']
+        package_url = info['deb_installer']
     elif options.platform == 'redhat':
-       package_url = info['rpm_installer']
+        package_url = info['rpm_installer']
 
     installer_name = package_url.rsplit('/', 1)[1]
     download_installer(package_url, 'token', info['cookie'], installer_name)
@@ -191,29 +191,49 @@ def validate_password(options):
 
 
 def main():
-    parser = optparse.OptionParser(usage="%prog --account_endpoint <endpoint> "
-            "--region <region> --user <user> [--password <password>] [--tenant "
-            "<tenant>] --platform <redhat|debian>")
-    parser.add_option('--account_endpoint', dest="endpoint", action="store",
-            help="Account endpoint for the customer. Example: acme.platform9.net")
-    parser.add_option('--region', dest="region", action="store",
-            help="Region from where the installer needs to be downloaded")
-    parser.add_option('--user', dest="user", action="store",
-            help="Platform9 user account to use to retrieve the installer")
-    parser.add_option('--password', dest="pw", action="store", default=None,
-            help="User account password. Will be prompted, if not provided "
-            "during script invocation")
-    parser.add_option('--tenant', dest="tenant", action="store",
-            default="service", help="Tenant to use for the user account. "
-            "Defaults to 'service' tenant")
-    parser.add_option('--platform', dest="platform", action="store",
-            help="Installer platform. Allowed options are redhat or debian.",
-            type='choice', choices=['redhat', 'debian'])
+    parser = optparse.OptionParser(
+        usage="%prog --account_endpoint <endpoint> "
+        "--region <region> --user <user> [--password <password>]"
+        " [--tenant <tenant>] --platform <redhat|debian>")
+    parser.add_option(
+        '--account_endpoint',
+        dest="endpoint",
+        action="store",
+        help="Account endpoint for the customer. Example: acme.platform9.net")
+    parser.add_option(
+        '--region',
+        dest="region",
+        action="store",
+        help="Region from where the installer needs to be downloaded")
+    parser.add_option(
+        '--user',
+        dest="user",
+        action="store",
+        help="Platform9 user account to use to retrieve the installer")
+    parser.add_option(
+        '--password',
+        dest="pw",
+        action="store",
+        default=None,
+        help="User account password. Will be prompted, if not provided during "
+        "script invocation")
+    parser.add_option(
+        '--tenant',
+        dest="tenant",
+        action="store",
+        default="service", help="Tenant to use for the user account. Defaults "
+        "to 'service' tenant")
+    parser.add_option(
+        '--platform',
+        dest="platform",
+        action="store",
+        help="Installer platform. Allowed options are redhat or debian.",
+        type='choice', choices=['redhat', 'debian'])
 
-    options, remainder = parser.parse_args()
+    options, _ = parser.parse_args()
     if not (options.endpoint and options.region and
             options.user and options.tenant):
-        print "ERROR: Missing arguments"
+        print("ERROR: Missing arguments")
         parser.print_usage()
         sys.exit(1)
 
