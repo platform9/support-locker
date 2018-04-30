@@ -75,7 +75,9 @@
                 "ec2:TerminateInstances",
                 "ec2:UnassignPrivateIpAddresses",
                 "ec2:DescribeAvailabilityZones",
-                "ec2:DescribeAddresses"
+                "ec2:DescribeAddresses",
+                "ec2:GetConsoleOutput",
+                "ec2:GetPasswordData"
             ],
             "Effect": "Allow",
             "Resource": "*"
