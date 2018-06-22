@@ -11,3 +11,5 @@ python-muranoclient
 python-neutronclient
 python-novaclient
 python-openstackclient
+# Needed for SAML ECP
+lxml
