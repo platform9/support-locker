@@ -52,5 +52,5 @@ if [ "$#" -ne 2 ]; then
   usage
   exit 1
 else
-  echo create_thinpool_from_block_device "$1" "$2"
+  create_thinpool_from_block_device "$1" "$2"
 fi
