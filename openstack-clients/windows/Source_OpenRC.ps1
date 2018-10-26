@@ -38,12 +38,12 @@ Else {
     #
     # *NOTE*: Using the 2.0 *auth api* does not mean that compute api is 2.0.  We
     # will use the 1.1 *compute api*
-    $os_project_name = Select-String -Path $openrc -Pattern 'OS_PROJECT_NAME'
+    $os_project_name = Select-String -Path $openrc -Pattern 'export OS_PROJECT_NAME'
     If ($os_project_name) {
         $env:OS_PROJECT_NAME = ([string]($os_project_name)).Split("=")[1].Replace("`"","")
     }
     Else {
-        Write $error
+        Write $rcerror
         Exit
     }
 
@@ -54,42 +54,47 @@ Else {
     #    $env:OS_TENANT_ID = ([string]($os_tenant_id)).Split("=")[1].Replace("`"","")
     #}
     #Else {
-    #    Write $error
+    #    Write $rcerror
     #    Exit
     #}
 
-    $os_auth_url = Select-String -Path $openrc -Pattern 'OS_AUTH_URL'
+    $os_auth_url = Select-String -Path $openrc -Pattern 'export OS_AUTH_URL'
     If ($os_auth_url) {
         $env:OS_AUTH_URL = ([string]($os_auth_url)).Split("=")[1].Replace("`"","")
     }
     Else {
-        Write $error
+        Write $rcerror
         Exit
     }
 
     # In addition to the owning entity (tenant), openstack stores the entity
     # performing the action as the **user**.
-    $os_username = Select-String -Path $openrc -Pattern 'OS_USERNAME'
+    $os_username = Select-String -Path $openrc -Pattern 'export OS_USERNAME'
     If ($os_username) {
         $env:OS_USERNAME = ([string]($os_username)).Split("=")[1].Replace("`"","")
     }
     Else {
-        Write $error
+        Write $rcerror
         Exit
     }
 
     # With Keystone you pass the keystone password.
-    $password = Select-String -Path $openrc -Pattern 'OS_PASSWORD'
-    $env:OS_PASSWORD = ([string]($password)).Split("=")[1].Replace("`"","")
-	
+    $password = Select-String -Path $openrc -Pattern 'export OS_PASSWORD'
+    $foundpassword = ([string]($password)).Split("=")[1].Replace("`"","")
+    If ($foundpassword -match '\$OS_PASSWORD_INPUT') {
+    	Write-Host 'No Password found.  Set with $env:OS_PASSWORD=YourPassword'
+    } 
+    Else {
+    	$env:OS_PASSWORD = $foundpassword
+    }
 	###Adding variable OS_REGION_NAME and OS_IDENTITY_API_VERSION
 	
-	    $os_region_name = Select-String -Path $openrc -Pattern 'OS_REGION_NAME'
+    $os_region_name = Select-String -Path $openrc -Pattern 'export OS_REGION_NAME'
     If ($os_region_name) {
         $env:OS_REGION_NAME = ([string]($os_region_name)).Split("=")[1].Replace("`"","")
     }
     Else {
-        Write $error
+        Write $rcerror
         Exit
     }
 	
@@ -98,7 +103,7 @@ Else {
         $env:OS_IDENTITY_API_VERSION = ([string]($os_identity_api_version)).Split("=")[1].Replace("`"","")
     }
     Else {
-        Write $error
+        Write $rcerror
         Exit
     }
 }
