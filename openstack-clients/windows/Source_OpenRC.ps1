@@ -14,22 +14,22 @@
 #>
 
 If ($args.count -lt 1) {
-    Write "Please provide an OpenRC file as argument."
+    Write-Host "Please provide an OpenRC file as argument."
     Exit
 }
 
 ElseIf ($args.count -gt 1) {
-    Write "Please provide a single OpenRC file as argument."
+    Write-Host "Please provide a single OpenRC file as argument."
     Exit
 }
 
 ElseIf (-Not (Test-Path $args[0])) {
-    Write "The OpenRC file you specified doesn't exist!"
+    Write-Host "The OpenRC file you specified doesn't exist!"
     Exit
 }
 Else {
     $openrc = $args[0]
-    $error = "The file you specified doesn't seem to be a valid OpenRC file"
+    $rcerror = "The file you specified doesn't seem to be a valid OpenRC file"
 
     # With the addition of Keystone, to use an openstack cloud you should
     # authenticate against keystone, which returns a **Token** and **Service
@@ -43,7 +43,7 @@ Else {
         $env:OS_PROJECT_NAME = ([string]($os_project_name)).Split("=")[1].Replace("`"","")
     }
     Else {
-        Write $rcerror
+        Write-Host $rcerror
         Exit
     }
 
@@ -54,7 +54,7 @@ Else {
     #    $env:OS_TENANT_ID = ([string]($os_tenant_id)).Split("=")[1].Replace("`"","")
     #}
     #Else {
-    #    Write $rcerror
+    #    Write-Host $rcerror
     #    Exit
     #}
 
@@ -63,7 +63,7 @@ Else {
         $env:OS_AUTH_URL = ([string]($os_auth_url)).Split("=")[1].Replace("`"","")
     }
     Else {
-        Write $rcerror
+        Write-Host $rcerror
         Exit
     }
 
@@ -74,7 +74,7 @@ Else {
         $env:OS_USERNAME = ([string]($os_username)).Split("=")[1].Replace("`"","")
     }
     Else {
-        Write $rcerror
+        Write-Host $rcerror
         Exit
     }
 
@@ -82,7 +82,7 @@ Else {
     $password = Select-String -Path $openrc -Pattern 'export OS_PASSWORD'
     $foundpassword = ([string]($password)).Split("=")[1].Replace("`"","")
     If ($foundpassword -match '\$OS_PASSWORD_INPUT') {
-    	Write-Host 'No Password found.  Set with $env:OS_PASSWORD=YourPassword'
+    	Write-Host-Host 'No Password found.  Set with $env:OS_PASSWORD=YourPassword'
     } 
     Else {
     	$env:OS_PASSWORD = $foundpassword
@@ -94,7 +94,7 @@ Else {
         $env:OS_REGION_NAME = ([string]($os_region_name)).Split("=")[1].Replace("`"","")
     }
     Else {
-        Write $rcerror
+        Write-Host $rcerror
         Exit
     }
 	
@@ -103,7 +103,7 @@ Else {
         $env:OS_IDENTITY_API_VERSION = ([string]($os_identity_api_version)).Split("=")[1].Replace("`"","")
     }
     Else {
-        Write $rcerror
+        Write-Host $rcerror
         Exit
     }
 }
