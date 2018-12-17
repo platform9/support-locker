@@ -72,7 +72,9 @@
                 "iam:GetRole",
                 "iam:GetRolePolicy",
                 "iam:GetUser",
+                "iam:ListAttachedRolePolicies",
                 "iam:ListInstanceProfilesForRole",
+                "iam:ListRolePolicies",
                 "iam:PassRole",
                 "iam:PutRolePolicy",
                 "iam:RemoveRoleFromInstanceProfile"
