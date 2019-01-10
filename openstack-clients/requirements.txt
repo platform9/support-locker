@@ -7,6 +7,7 @@ python-designateclient
 python-glanceclient
 python-heatclient
 python-ironicclient
+python-ironic-inspector-client
 python-keystoneclient
 python-muranoclient
 python-neutronclient
