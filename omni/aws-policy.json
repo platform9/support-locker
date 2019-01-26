@@ -77,7 +77,8 @@
                 "ec2:DescribeAvailabilityZones",
                 "ec2:DescribeAddresses",
                 "ec2:GetConsoleOutput",
-                "ec2:GetPasswordData"
+                "ec2:GetPasswordData",
+                "ec2:ModifyNetworkInterfaceAttribute"
             ],
             "Effect": "Allow",
             "Resource": "*"
