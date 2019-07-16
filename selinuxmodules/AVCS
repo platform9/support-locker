@@ -1,0 +1,3 @@
+type=USER_MGMT msg=audit(1562799471.882:2417): pid=27565 uid=0 auid=1000 ses=5 subj=unconfined_u:unconfined_r:useradd_t:s0-s0:c0.c1023 msg='op=add-user acct="pf9" exe="/usr/sbin/useradd" hostname=? addr=? terminal=? res=failed'
+echo "Implementing Audit2Allow for AVCs"
+
