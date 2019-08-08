@@ -16,8 +16,8 @@ elif sys.version_info.major == 3:
 def do_request(action, host, relative_url, headers, body, proxy=""):
     if proxy != "":
        proxyData = proxy.split(":")
-       proxyHost = proxyData[0] + ":" +  proxyData[1]
-       proxyPort = proxyData[2]
+       proxyHost = proxyData[0]
+       proxyPort = proxyData[1]
        conn = httplib.HTTPSConnection(proxyHost, proxyPort)
        url = "https://" + host + relative_url
        body_json = json.JSONEncoder().encode(body)
