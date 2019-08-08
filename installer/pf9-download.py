@@ -13,11 +13,21 @@ elif sys.version_info.major == 3:
     from urllib import parse as urlparse
 
 
-def do_request(action, host, relative_url, headers, body):
-    conn = httplib.HTTPSConnection(host)
-    body_json = json.JSONEncoder().encode(body)
-    conn.request(action, relative_url, body_json, headers)
-    response = conn.getresponse()
+def do_request(action, host, relative_url, headers, body, proxy=""):
+    if proxy != "":
+       proxyData = proxy.split(":")
+       proxyHost = proxyData[0] + ":" +  proxyData[1]
+       proxyPort = proxyData[2]
+       conn = httplib.HTTPSConnection(proxyHost, proxyPort)
+       url = "https://" + host + relative_url
+       body_json = json.JSONEncoder().encode(body)
+       conn.request(action, relative_url, body_json, headers)
+       response = conn.getresponse()
+    else:
+       conn = httplib.HTTPSConnection(host)
+       body_json = json.JSONEncoder().encode(body)
+       conn.request(action, relative_url, body_json, headers)
+       response = conn.getresponse()
     return conn, response
 
 
@@ -31,12 +41,13 @@ def download_report(bytes_so_far, total_size, installer_name):
         sys.stdout.write('\n')
 
 
-def download_installer(url, token, cookie, installer_name):
+def download_installer(url, token, cookie, installer_name, proxy=""):
+    print "we are here, we are really here"
     headers = {"X-Auth-Token": token, "cookie": cookie}
     body = ""
 
     _, net_location, path, _, _ = urlparse.urlsplit(url)
-    conn, response = do_request("GET", net_location, path, headers, body)
+    conn, response = do_request("GET", net_location, path, headers, body, proxy)
 
     if response.status != 200:
         print("{0}: {1}".format(response.status, response.reason))
@@ -62,7 +73,7 @@ def download_installer(url, token, cookie, installer_name):
     conn.close()
 
 
-def get_token_v3(host, username, password, tenant):
+def get_token_v3(host, username, password, tenant, proxy=""):
     headers = {"Content-Type": "application/json"}
     body = {
         "auth": {
@@ -86,7 +97,7 @@ def get_token_v3(host, username, password, tenant):
     }
     conn, response = do_request("POST", host,
                                 "/keystone/v3/auth/tokens?nocatalog",
-                                headers, body)
+                                headers, body, proxy)
 
     if response.status not in (200, 201):
         print("{0}: {1}".format(response.status, response.reason))
@@ -97,7 +108,7 @@ def get_token_v3(host, username, password, tenant):
     return token
 
 
-def get_package_info_from_token(host, token, region):
+def get_package_info_from_token(host, token, region, proxy=""):
 
     out = {}
 
@@ -108,7 +119,7 @@ def get_package_info_from_token(host, token, region):
 
     conn, response = do_request("GET", host,
                                 "/keystone/v3/services?type=regionInfo",
-                                headers, {})
+                                headers, {}, proxy)
     if response.status not in (200, 201):
         print("{0}: {1}".format(response.status, response.reason))
         exit(1)
@@ -121,7 +132,7 @@ def get_package_info_from_token(host, token, region):
     conn, response = do_request(
         "GET", host,
         "/keystone/v3/endpoints?service_id={0}".format(service_id), headers,
-        {})
+        {}, proxy)
     if response.status not in (200, 201):
         print("{0}: {1}".format(response.status, response.reason))
         exit(1)
@@ -137,7 +148,7 @@ def get_package_info_from_token(host, token, region):
     conn.close()
 
     _, net_location, path, _, _ = urlparse.urlsplit(public_url)
-    conn, response = do_request("GET", net_location, path, headers, {})
+    conn, response = do_request("GET", net_location, path, headers, {}, proxy)
     if response.status not in (200, 201):
         print("{0}: {1}".format(response.status, response.reason))
         exit(1)
@@ -148,7 +159,7 @@ def get_package_info_from_token(host, token, region):
     conn.close()
 
     _, net_location, path, _, _ = urlparse.urlsplit(cookie_url)
-    conn, response = do_request("GET", net_location, path, headers, {})
+    conn, response = do_request("GET", net_location, path, headers, {}, proxy)
     if response.status not in (200, 201, 204):
         print("{0}: {1}".format(response.status, response.reason))
         exit(1)
@@ -158,7 +169,7 @@ def get_package_info_from_token(host, token, region):
 
     headers['cookie'] = cookie
     _, net_location, path, _, _ = urlparse.urlsplit(internal_url)
-    conn, response = do_request("GET", net_location, path, headers, {})
+    conn, response = do_request("GET", net_location, path, headers, {}, proxy)
     if response.status not in (200, 201):
         print("{0}: {1}".format(response.status, response.reason))
         exit(1)
@@ -182,7 +193,7 @@ def get_package_info_from_token(host, token, region):
 
 def get_installer(options):
     token = get_token_v3(options.endpoint, options.user,
-                         options.pw, options.tenant)
+                         options.pw, options.tenant, options.proxy)
 
     info = get_package_info_from_token(options.endpoint, token, options.region)
     if options.platform == 'debian':
@@ -191,7 +202,7 @@ def get_installer(options):
         package_url = info['rpm_installer']
 
     installer_name = package_url.rsplit('/', 1)[1]
-    download_installer(package_url, 'token', info['cookie'], installer_name)
+    download_installer(package_url, 'token', info['cookie'], installer_name, options.proxy)
 
 
 def validate_password(options):
@@ -203,7 +214,7 @@ def main():
     parser = optparse.OptionParser(
         usage="%prog --account_endpoint <endpoint> "
         "--region <region> --user <user> [--password <password>]"
-        " [--tenant <tenant>] --platform <redhat|debian>")
+        " [--tenant <tenant>] --platform <redhat|debian> --proxy <proxy>")
     parser.add_option(
         '--account_endpoint',
         dest="endpoint",
@@ -238,6 +249,11 @@ def main():
         action="store",
         help="Installer platform. Allowed options are redhat or debian.",
         type='choice', choices=['redhat', 'debian'])
+    parser.add_option(
+        '--proxy',
+        dest="proxy",
+        action="store",
+        default="", help="Proxy to reach internet")
 
     options, _ = parser.parse_args()
     if not (options.endpoint and options.region and
