@@ -19,15 +19,12 @@ def do_request(action, host, relative_url, headers, body, proxy=""):
        proxyHost = proxyData[0]
        proxyPort = proxyData[1]
        conn = httplib.HTTPSConnection(proxyHost, proxyPort)
-       url = "https://" + host + relative_url
-       body_json = json.JSONEncoder().encode(body)
-       conn.request(action, relative_url, body_json, headers)
-       response = conn.getresponse()
+       conn.set_tunnel(host, 443)
     else:
        conn = httplib.HTTPSConnection(host)
-       body_json = json.JSONEncoder().encode(body)
-       conn.request(action, relative_url, body_json, headers)
-       response = conn.getresponse()
+    body_json = json.JSONEncoder().encode(body)
+    conn.request(action, relative_url, body_json, headers)
+    response = conn.getresponse()
     return conn, response
 
 
