@@ -15,6 +15,8 @@
                 "ec2:CreateVolume",
                 "ec2:DeleteNetworkInterface",
                 "ec2:DeleteVolume",
+                "ec2:DescribeAddresses",
+                "ec2:DescribeAvailabilityZones",
                 "ec2:DescribeImages",
                 "ec2:DescribeInstanceAttribute",
                 "ec2:DescribeInstances",
@@ -37,14 +39,12 @@
                 "ec2:DetachNetworkInterface",
                 "ec2:DetachVolume",
                 "ec2:ImportKeyPair",
+                "ec2:ModifyNetworkInterfaceAttribute",
                 "ec2:RunInstances",
                 "ec2:StartInstances",
                 "ec2:StopInstances",
                 "ec2:TerminateInstances",
-                "ec2:UnassignPrivateIpAddresses",
-                "ec2:DescribeAvailabilityZones",
-                "ec2:DescribeAddresses",
-                "ec2:ModifyNetworkInterfaceAttribute"
+                "ec2:UnassignPrivateIpAddresses"
             ],
             "Effect": "Allow",
             "Resource": "*"
