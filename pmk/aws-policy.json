@@ -131,6 +131,7 @@
                 "autoscaling:DescribeLaunchConfigurations",
                 "autoscaling:DescribeScalingActivities",
                 "autoscaling:DetachLoadBalancers",
+                "autoscaling:EnableMetricsCollection",
                 "autoscaling:UpdateAutoScalingGroup",
                 "elasticloadbalancing:DescribeInstanceHealth"
             ],
