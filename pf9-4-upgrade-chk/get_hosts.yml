@@ -1,0 +1,21 @@
+---
+- hosts: localhost
+  strategy: linear
+  pre_tasks:
+    - name: set variables
+      include_vars: vars.yml
+  tasks:
+    # To-Do: Add get_token task
+    - name: get nodes from resmgr for inventory
+      import_role:
+        name: resmgr
+      vars:
+        resmgr_tagger:
+          - "get_hosts"
+          - "add_host_to_inventory"
+          - "save_inventory"
+        resmgr_filter_roles: "{{ pf9_roles }}"
+        resmgr_token: "{{ pmo_token }}"
+        resmgr_pf9_du: "{{ pf9_du }}"
+        resmgr_filter_logic: "{{ filter_logic }}"
+        resmgr_inventory_group: "pf9_hosts"

@@ -1,0 +1,42 @@
+---
+# Variables can be included here or at execution time:
+#    example: --extra-vars "pmo_token=xxxxxx" 
+pmo_token:
+  "xxxxYOUR_KEYSTONE_TOKENxxx"
+
+pf9_du:
+  "https://example.platform9.com"
+
+min_app_versions:
+  ovs:
+    CentOS: 
+      version: "2.11.1"
+    Ubuntu:
+      version: "2.5.8"
+  libvirt:
+    CentOS: 
+      version: "3.10"
+    Ubuntu:
+      version: "3.10"
+  qemu:
+    CentOS: 
+      version: "2.10"
+    Ubuntu:
+      version: "2.10"
+
+filter_logic:
+  "any"
+
+pf9_roles:
+  - 'pf9-neutron-ovs-agent'
+  - 'pf9-cindervolume-base'
+  - 'pf9-neutron-base'
+  - 'pf9-ceilometer'
+  - 'pf9-glance-role'
+  - 'pf9-ostackhost-neutron'
+  - 'pf9-cindervolume-lvm'
+  - 'pf9-neutron-ovs-agent'
+  - 'pf9-neutron-l3-agent'
+  - 'pf9-neutron-metadata-agent'
+  - 'pf9-neutron-dhcp-agent'
+#  - 'pf9-kube'

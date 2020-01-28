@@ -1,0 +1,11 @@
+---
+- name: Add hosts to in-memory inventory
+  add_host:
+    ansible_host: "{{ item.extensions.ip_address.data }}"
+    pf9_id: "{{ item.id }}"
+    name: "{{ item.info.hostname }}"
+    resmgr_host_data: "{{ item }}"
+    groups: "{{ resmgr_inventory_group | default() }}"
+  with_items: "{{ resmgr_hosts }}"
+  loop_control:
+    label: "{{ item.info.hostname }}"

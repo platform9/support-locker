@@ -1,0 +1,15 @@
+---
+- name: build inventory file data-set
+  set_fact:
+    inventory_file: |
+      [{{ resmgr_inventory_group }}]
+      {% for item in resmgr_hosts %}
+      {{ item.info.hostname }} ansible_host={{ item.extensions.ip_address.data }} pf9_id={{ item.id }} resmgr_host_data='{{ item | to_json }}'
+      {% endfor %}
+
+- name: write inventory file
+  copy:
+    content: "{{ inventory_file }}"
+    dest: "{{ playbook_dir }}/inventory_{{ resmgr_pf9_du | regex_replace('^htt.*://') }}_hosts"
+  delegate_to: 127.0.0.1
+  when: (inventory_file is defined) and (inventory_file|length > 0)

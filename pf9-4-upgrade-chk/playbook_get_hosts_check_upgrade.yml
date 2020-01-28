@@ -1,0 +1,3 @@
+---
+- import_playbook: get_hosts.yml
+- import_playbook: check_upgrade.yml
