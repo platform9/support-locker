@@ -1,0 +1,12 @@
+---
+- name: resmgr_get_hosts
+  include_tasks: get_hosts.yml
+  when: ('get_hosts' in resmgr_tagger)
+
+- name: resmgr_add_host_to_inventory
+  include_tasks: add_host_to_inventory.yml
+  when: ('add_host_to_inventory' in resmgr_tagger) and (resmgr_hosts is defined) and (resmgr_hosts | length > 0)
+
+- name: resmgr_save_inventory
+  include_tasks: save_inventory.yml
+  when: ('save_inventory' in resmgr_tagger) and (resmgr_hosts is defined) and (resmgr_hosts | length > 0)

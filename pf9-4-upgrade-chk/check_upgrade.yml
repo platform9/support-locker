@@ -1,0 +1,22 @@
+---
+- hosts: pf9_hosts
+  gather_facts: yes
+  strategy: linear 
+  pre_tasks:
+    - name: set variables
+      include_vars: vars.yml
+  tasks:
+    - name: Check package Versions
+      include_role:
+        name: check_pkg_versions
+
+    - name: converge results
+      set_fact:
+        results_full: "{{ ansible_play_hosts | map('extract', hostvars, 'results') | list }}"
+      run_once: yes
+
+    - name: write results to file
+      copy:
+        content: "{{ results_full }}"
+        dest: "{{ playbook_dir }}/RESULTS_{{ pf9_du | regex_replace('^htt.*://') }}.json"
+      delegate_to: 127.0.0.1
