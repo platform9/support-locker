@@ -67,7 +67,6 @@ Ubuntu:
 - apt-get update
 - add-apt-repository -y cloud-archive:queens
 - apt update -y
-#For the libvirt upgrade, you will hit “Enter” and accept the defaults to the questions
 - apt-get install --only-upgrade \*libvirt\*
 #For the libvirt upgrade, you will hit “Enter” and accept the defaults to the questions
 - apt-get install --only-upgrade \*qemu\*
