@@ -63,12 +63,11 @@ $jq '.' RESULTS_example.platform9.net.json
 
 1. Log into the host and run individual update commands:
 ```
-Ubuntu:
-- apt-get update
+Ubuntu: 
 - add-apt-repository -y cloud-archive:queens
 - apt update -y
 - apt-get install --only-upgrade \*libvirt\*
-#For the libvirt upgrade, you will hit “Enter” and accept the defaults to the questions
+#For the libvirt upgrade, you will hit "Enter" and accept the defaults to the questions
 - apt-get install --only-upgrade \*qemu\*
 - apt-get install --only-upgrade pf9-neutron-ovs-agent
 
