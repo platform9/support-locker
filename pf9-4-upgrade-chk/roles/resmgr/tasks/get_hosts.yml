@@ -24,9 +24,9 @@
   loop_control:
     label: "{{ item.info.hostname }}"
 
-- name: Check Output of Resmgr filter_roles 
+- name: Check Output of Resmgr filter_roles
   fail:
-    msg: 
+    msg:
       - "FAILURE: No Host Matched the Filter:
          Logic: {{ resmgr_filter_logic }}
          Roles: {{ resmgr_filter_roles }}"

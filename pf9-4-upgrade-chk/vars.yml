@@ -1,6 +1,6 @@
 ---
 # Variables can be included here or at execution time:
-#    example: --extra-vars "pmo_token=xxxxxx" 
+#    example: --extra-vars "pmo_token=xxxxxx"
 pmo_token:
   "xxxxYOUR_KEYSTONE_TOKENxxx"
 
@@ -9,17 +9,17 @@ pf9_du:
 
 min_app_versions:
   ovs:
-    CentOS: 
+    CentOS:
       version: "2.11.1"
     Ubuntu:
       version: "2.5.8"
   libvirt:
-    CentOS: 
+    CentOS:
       version: "3.10"
     Ubuntu:
       version: "3.10"
   qemu:
-    CentOS: 
+    CentOS:
       version: "2.10"
     Ubuntu:
       version: "2.10"
