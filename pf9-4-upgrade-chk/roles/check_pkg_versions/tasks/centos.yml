@@ -4,6 +4,9 @@
 
 - name: Get lib-virt Version
   block:
+    - shell: "/usr/sbin/libvirtd --version"
+      register: libvirt_output_raw
+      failed_when: libvirt_output_raw.stderr is search("command not found") or libvirt_output_raw.rc != 0
     - shell: "/usr/sbin/libvirtd --version | {{ version_regex }}"
       register: libvirt_output
       failed_when: libvirt_output.stderr is search("command not found") or libvirt_output.rc != 0
@@ -14,6 +17,9 @@
 
 - name: Get ovs Version
   block:
+    - shell: "/usr/sbin/ovs-vswitchd --version"
+      register: ovs_output_raw
+      failed_when: ovs_output_raw.stderr is search("command not found") or ovs_output_raw.rc != 0
     - shell: "/usr/sbin/ovs-vswitchd --version | {{ version_regex }}"
       register: ovs_output
       failed_when: ovs_output.stderr is search("command not found") or ovs_output.rc != 0
@@ -24,6 +30,9 @@
 
 - name: Get qemu Version
   block:
+    - shell: "/usr/libexec/qemu-kvm --version"
+      register: qemu_output_raw
+      failed_when: qemu_output_raw.stderr is search("command not found") or qemu_output_raw.rc != 0
     - shell: "/usr/libexec/qemu-kvm --version | {{ version_regex }}"
       register: qemu_output
       failed_when: qemu_output.stderr is search("command not found") or qemu_output.rc != 0
@@ -47,6 +56,9 @@
                      %}"
           installed: "{{ libvirt_output.stdout }}"
           required: "{{ min_app_versions.libvirt.CentOS.version }}"
+          raw_output: "{% if libvirt_output_raw.stdout is defined %}
+                        {{ libvirt_output_raw.stdout }}
+                      {% endif %}"
 
 - name: Validate QEMU
   set_fact:
@@ -63,6 +75,9 @@
                    %}"
           installed: "{{ qemu_output.stdout }}"
           required: "{{ min_app_versions.qemu.CentOS.version }}"
+          raw_output: "{% if qemu_output_raw.stdout is defined %}
+                        {{ qemu_output_raw.stdout }}
+                      {% endif %}"
 
 - name: Validate OVS
   set_fact:
@@ -79,6 +94,16 @@
                    %}"
           installed: "{{ ovs_output.stdout }}"
           required: "{{ min_app_versions.ovs.CentOS.version }}"
+          raw_output: "{% if ovs_output_raw.stdout is defined %}
+                        {{ ovs_output_raw.stdout }}
+                      {% endif %}"
+
+- name: Create Results Variable
+  set_fact:
+    results:
+      - "host: {{ inventory_hostname }}"
+      - "id: {{ hostvars[inventory_hostname].pf9_id }}"
+      - "IP: {{ ansible_host }}"
 
 - name: Create Results Variable
   set_fact:
