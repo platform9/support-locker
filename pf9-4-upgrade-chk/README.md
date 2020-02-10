@@ -7,7 +7,7 @@ The upgrade checker is read-only, safe to run on your Platform9 hosts, and does 
 
 2. Change the current working directory to the location where you want the cloned directory to be made.
 
-3. Run this from the machine: `git clone https://github.com/platform9/cs-tools.git`
+3. Run this from the machine: `git clone https://github.com/platform9/support-locker.git`
 
 4. The upgrade checker command below identifies your Platform9 host inventory and will validate the OS package versions.
 ```
