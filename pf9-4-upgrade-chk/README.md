@@ -58,6 +58,10 @@ $jq '.' RESULTS_example.platform9.net.json
   ]
 ]
 ```
+**Please note: The results shown above need to be within these version ranges. If you see any results that PASS which are not within these version ranges, please notify your TAM accordingly**
+- Openvswitch - 2.5.8 to 2.11.1
+- QEMU - 2.10 to 2.12
+- libvirt - 3.10 to 6.0
 
 ### OS Package Upgrade Steps
 
