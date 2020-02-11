@@ -11,7 +11,10 @@
 - name: Resmgr filter_roles=ALL and reachable
   set_fact:
     resmgr_hosts_filtered: "{{ item }}"
-  when: (item.info.responding is defined) and (item.info.responding and resmgr_filter_logic == 'all' and resmgr_filter_roles is subset(item.roles))
+  when:
+      (item.info.responding is defined) and
+      (item.info.responding and resmgr_filter_logic == 'all' and
+      resmgr_filter_roles is subset(item.roles))
   with_items: "{{ resmgr_all_hosts.json }}"
   loop_control:
     label: "{{ item.info.hostname }}"
@@ -19,14 +22,17 @@
 - name: Resmgr filter_roles=ANY and reachable
   set_fact:
     resmgr_hosts_filtered: "{{ (resmgr_hosts_filtered | default([])) + [item] }}"
-  when: (item.info.responding is defined) and (item.info.responding and resmgr_filter_logic == 'any' and ( item.roles | default('')) | intersect(resmgr_filter_roles) | length > 0)
+  when:
+      (item.info.responding is defined) and
+      (item.info.responding and resmgr_filter_logic == 'any' and
+      (item.roles | default('')) | intersect(resmgr_filter_roles) | length > 0)
   with_items: "{{ resmgr_all_hosts.json }}"
   loop_control:
     label: "{{ item.info.hostname }}"
 
-- name: Check Output of Resmgr filter_roles 
+- name: Check Output of Resmgr filter_roles
   fail:
-    msg: 
+    msg:
       - "FAILURE: No Host Matched the Filter:
          Logic: {{ resmgr_filter_logic }}
          Roles: {{ resmgr_filter_roles }}"
@@ -39,6 +45,7 @@
   with_subelements:
     - "{{ resmgr_hosts_filtered }}"
     - extensions.ip_address.data
+  failed_when: False
   changed_when: "ping_result.rc == 0"
   ignore_errors: yes
   loop_control:
@@ -46,7 +53,8 @@
 
 - name: Compile clean resmgr_hosts dict
   set_fact:
-    resmgr_hosts: "{{ (resmgr_hosts | default([])) + [item.item.0 | combine({'extensions':{'ip_address':{'data': item.item.1 }}}, recursive=True)] }}"
+    resmgr_hosts:
+      "{{ (resmgr_hosts | default([])) + [item.item.0 |combine({'extensions':{'ip_address':{'data': item.item.1 }}}, recursive=True)] }}"
   with_items: "{{ ping_result.results }}"
   when: item.rc == 0
   loop_control:

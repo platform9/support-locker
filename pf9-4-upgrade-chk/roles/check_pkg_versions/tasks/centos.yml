@@ -1,12 +1,12 @@
 ---
 - set_fact:
-    version_regex: sed -rn 's/^.*([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' 
+    version_regex: awk -v RS='([0-9]+\\.){2}[0-9]+' 'RT{print RT ; exit}'
 
 - name: Get lib-virt Version
   block:
     - shell: "/usr/sbin/libvirtd --version | {{ version_regex }}"
       register: libvirt_output
-      failed_when: libvirt_output.stderr is search("command not found") or libvirt_output.rc != 0 
+      failed_when: libvirt_output.stderr is search("command not found") or libvirt_output.rc != 0
   rescue:
     - set_fact:
         libvirt_output:
@@ -14,9 +14,9 @@
 
 - name: Get ovs Version
   block:
-    - shell: "/usr/sbin/ovs-vswitchd --version | {{ version_regex }}" 
+    - shell: "/usr/sbin/ovs-vswitchd --version | {{ version_regex }}"
       register: ovs_output
-      failed_when: ovs_output.stderr is search("command not found") or ovs_output.rc != 0 
+      failed_when: ovs_output.stderr is search("command not found") or ovs_output.rc != 0
   rescue:
     - set_fact:
         ovs_output:
@@ -24,44 +24,37 @@
 
 - name: Get qemu Version
   block:
-    - shell: "/usr/libexec/qemu-kvm --version | {{ version_regex }}" 
+    - shell: "/usr/libexec/qemu-kvm --version | {{ version_regex }}"
       register: qemu_output
-      failed_when: qemu_output.stderr is search("command not found") or qemu_output.rc != 0 
+      failed_when: qemu_output.stderr is search("command not found") or qemu_output.rc != 0
   rescue:
     - set_fact:
         qemu_output:
           stdout: "not installed"
-  
-- name: Create Results Variable
-  set_fact:
-    results: 
-      - "host: {{ inventory_hostname }}"
-      - "id: {{ hostvars[inventory_hostname].pf9_id }}"
-      - "IP: {{ ansible_host }}"
 
 - name: Validate Libvirt
   set_fact:
     libvirt:
       - libvirt:
           result: "{%
-                     if 
-                       libvirt_output.stdout != 'not installed' and 
+                     if
+                       libvirt_output.stdout != 'not installed' and
                        libvirt_output.stdout is version(min_app_versions.libvirt.CentOS.version, '>=' )
                        %}PASS{%
-                     else 
+                     else
                        %}FAIL{%
                      endif
                      %}"
           installed: "{{ libvirt_output.stdout }}"
           required: "{{ min_app_versions.libvirt.CentOS.version }}"
 
-- name: Validate QEMU 
+- name: Validate QEMU
   set_fact:
     qemu:
       - qemu:
           result: "{%
-                     if 
-                       qemu_output.stdout != 'not installed' and 
+                     if
+                       qemu_output.stdout != 'not installed' and
                        qemu_output.stdout is version(min_app_versions.qemu.CentOS.version, '>=' )
                        %}PASS{%
                      else
@@ -71,13 +64,13 @@
           installed: "{{ qemu_output.stdout }}"
           required: "{{ min_app_versions.qemu.CentOS.version }}"
 
-- name: Validate OVS 
+- name: Validate OVS
   set_fact:
     ovs:
       - ovs:
           result: "{%
-                     if 
-                       ovs_output.stdout != 'not installed' and 
+                     if
+                       ovs_output.stdout != 'not installed' and
                        ovs_output.stdout is version(min_app_versions.ovs.CentOS.version, '>=' )
                        %}PASS{%
                      else
@@ -86,6 +79,13 @@
                    %}"
           installed: "{{ ovs_output.stdout }}"
           required: "{{ min_app_versions.ovs.CentOS.version }}"
+
+- name: Create Results Variable
+  set_fact:
+    results:
+      - "host: {{ inventory_hostname }}"
+      - "id: {{ hostvars[inventory_hostname].pf9_id }}"
+      - "IP: {{ ansible_host }}"
 
 - name: Compile Results
   set_fact:

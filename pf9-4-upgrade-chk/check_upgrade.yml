@@ -1,7 +1,7 @@
 ---
 - hosts: pf9_hosts
   gather_facts: yes
-  strategy: linear 
+  strategy: linear
   pre_tasks:
     - name: set variables
       include_vars: vars.yml

@@ -1,10 +1,7 @@
 ---
-# /usr/bin/qemu-system-x86_64
-# /usr/sbin/libvirtd
-
 - set_fact:
-    version_regex: sed -rn 's/^.*([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' 
-    
+    version_regex: awk -v RS='([0-9]+\\.){2}[0-9]+' 'RT{print RT ; exit}'
+
 - name: Get lib-virt Version
   block:
     - shell: "libvirtd --version | {{ version_regex }}"
@@ -17,7 +14,7 @@
 
 - name: Get ovs Version
   block:
-    - shell: "ovs-vswitchd --version | {{ version_regex }}" 
+    - shell: "ovs-vswitchd --version | {{ version_regex }}"
       register: ovs_output
       failed_when: ovs_output.stderr is search("command not found") or ovs_output.rc != 0
   rescue:
@@ -27,7 +24,7 @@
 
 - name: Get qemu Version
   block:
-    - shell: "qemu-system-x86_64 --version | {{ version_regex }}" 
+    - shell: "qemu-system-x86_64 --version | {{ version_regex }}"
       register: qemu_output
       failed_when: qemu_output.stderr is search("command not found") or qemu_output.rc != 0
   rescue:
@@ -40,7 +37,7 @@
     libvirt:
       - libvirt:
           result: "{%
-                     if 
+                     if
                        libvirt_output.stdout != 'not installed' and
                        libvirt_output.stdout is version(min_app_versions.libvirt.Ubuntu.version, '>=')
                        %}PASS{%
@@ -97,4 +94,3 @@
     - "{{ libvirt }}"
     - "{{ qemu }}"
     - "{{ ovs }}"
-
