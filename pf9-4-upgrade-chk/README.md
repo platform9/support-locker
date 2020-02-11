@@ -7,7 +7,7 @@ The upgrade checker is read-only, safe to run on your Platform9 hosts, and does 
 
 2. Change the current working directory to the location where you want the cloned directory to be made.
 
-3. Run this from the machine: `git clone https://github.com/platform9/cs-tools.git`
+3. Run this from the machine: `git clone https://github.com/platform9/support-locker.git`
 
 4. The upgrade checker command below identifies your Platform9 host inventory and will validate the OS package versions.
 ```
@@ -58,8 +58,7 @@ $jq '.' RESULTS_example.platform9.net.json
   ]
 ]
 ```
-**Please note: The results shown above need to be within these version ranges. If you see any results that PASS which are not within these version ranges, please notify your TAM accordingly**
-
+**Please note: The results shown above need to be within these version ranges. If you see any results that PASS which are not within these version ranges, please notify your CSM accordingly**
 - Openvswitch - 2.5.8 to 2.11.1
 - QEMU - 2.10 to 2.12
 - libvirt - 3.10 to 6.0
@@ -74,22 +73,21 @@ Ubuntu:
 #For the libvirt upgrade, you will hit "Enter" and accept the defaults to the questions
 - apt-get install --only-upgrade \*libvirt\*
 - apt-get install --only-upgrade \*qemu\*
-- apt-get install --only-upgrade pf9-neutron-ovs-agent
+- apt-get install --only-upgrade \*openvswitch\*
 
 RHEL/CentOS:
 - yum update \*libvirt\*
+- yum -y install centos-release-qemu-ev
 - yum update \*qemu\*
-- yum update pf9-neutron-ovs-agent
+- yum update \*openvswitch\*
 ```
-2. Once the OS packages are updated, perform the following steps to reload the services with the new binaries:
+2. Once the OS packages are updated, perform the following steps to reload the services with the new binaries on each host:
 ```
 libvirt/QEMU (Note: You can avoid VM downtime by migrating them to hosts that already have the updated OS packages):
 - Either reboot the host or perform a hard reboot of VM's which involves fully stopping VM's and starting them back up
 
-OVS:
-- restart OVS on the host
-- For RHEL/CentOS: "systemctl restart openvswitch"
-- For Ubuntu: "systemctl restart openvswitch-switch"
+OpenVSwitch:
+- systemctl restart pf9-neutron-ovs-agent
 ```
 3. To verify all is well, run the upgrade checker again against your hosts:
 ```
