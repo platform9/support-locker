@@ -129,6 +129,7 @@
                 "autoscaling:DeleteTags",
                 "autoscaling:DescribeAutoScalingGroups",
                 "autoscaling:DescribeLaunchConfigurations",
+		"autoscaling:DescribeLoadBalancers",
                 "autoscaling:DescribeScalingActivities",
                 "autoscaling:DetachLoadBalancers",
                 "autoscaling:EnableMetricsCollection",
