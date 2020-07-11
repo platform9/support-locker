@@ -39,7 +39,6 @@ def download_report(bytes_so_far, total_size, installer_name):
 
 
 def download_installer(url, token, cookie, installer_name, proxy=""):
-    print "we are here, we are really here"
     headers = {"X-Auth-Token": token, "cookie": cookie}
     body = ""
 
@@ -211,7 +210,7 @@ def main():
     parser = optparse.OptionParser(
         usage="%prog --account_endpoint <endpoint> "
         "--region <region> --user <user> [--password <password>]"
-        " [--tenant <tenant>] --platform <redhat|debian> --proxy <proxy>")
+        " [--tenant <tenant>] --platform <redhat|debian> [--proxy <proxy>]")
     parser.add_option(
         '--account_endpoint',
         dest="endpoint",
@@ -250,7 +249,7 @@ def main():
         '--proxy',
         dest="proxy",
         action="store",
-        default="", help="Proxy to reach internet")
+        default="", help="Proxy to reach internet, in format <host>:<port>")
 
     options, _ = parser.parse_args()
     if not (options.endpoint and options.region and
