@@ -134,6 +134,8 @@
                 "autoscaling:DetachLoadBalancers",
                 "autoscaling:EnableMetricsCollection",
                 "autoscaling:UpdateAutoScalingGroup",
+                "autoscaling:SuspendProcesses",
+                "autoscaling:ResumeProcesses",
                 "elasticloadbalancing:DescribeInstanceHealth"
             ],
             "Resource": [
