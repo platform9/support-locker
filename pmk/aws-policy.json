@@ -65,7 +65,7 @@
                 "iam:AddRoleToInstanceProfile",
                 "iam:CreateInstanceProfile",
                 "iam:CreateRole",
-		"iam:CreateServiceLinkedRole",
+                "iam:CreateServiceLinkedRole",
                 "iam:DeleteInstanceProfile",
                 "iam:DeleteRole",
                 "iam:DeleteRolePolicy",
@@ -98,7 +98,8 @@
                 "elasticloadbalancing:DescribeLoadBalancers",
                 "elasticloadbalancing:DescribeTags",
                 "elasticloadbalancing:ModifyLoadBalancerAttributes",
-                "elasticloadbalancing:RemoveTags"
+                "elasticloadbalancing:RemoveTags",
+                "elasticloadbalancing:DescribeInstanceHealth"
             ],
             "Resource": [
                 "*"
@@ -135,8 +136,30 @@
                 "autoscaling:EnableMetricsCollection",
                 "autoscaling:UpdateAutoScalingGroup",
                 "autoscaling:SuspendProcesses",
-                "autoscaling:ResumeProcesses",
-                "elasticloadbalancing:DescribeInstanceHealth"
+                "autoscaling:ResumeProcesses"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "eks:DescribeFargateProfile",
+                "eks:ListTagsForResource",
+                "eks:DescribeAddon",
+                "eks:DescribeNodegroup",
+                "eks:ListNodegroups",
+                "eks:DescribeIdentityProviderConfig",
+                "eks:AccessKubernetesApi",
+                "eks:DescribeCluster",
+                "eks:ListClusters",
+                "eks:ListAddons",
+                "eks:ListUpdates",
+                "eks:DescribeAddonVersions",
+                "eks:ListIdentityProviderConfigs",
+                "eks:ListFargateProfiles",
+                "eks:DescribeUpdate"
             ],
             "Resource": [
                 "*"
