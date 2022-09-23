@@ -386,6 +386,8 @@ Resources:
             Service:
             - ec2.amazonaws.com
         Version: 2012-10-17
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
       RoleName: control-plane.cluster-api-provider-aws.sigs.k8s.io
     Type: AWS::IAM::Role
   AWSIAMRoleControllers:
