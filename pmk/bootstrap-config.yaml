@@ -1,0 +1,10 @@
+apiVersion: bootstrap.aws.infrastructure.cluster.x-k8s.io/v1beta1
+kind: AWSIAMConfiguration
+spec:
+  eks:
+    iamRoleCreation: true # Set to true if you plan to use the EKSEnableIAM feature flag to enable automatic creation of IAM roles
+    managedMachinePool:
+      disable: false # Set to false to enable creation of the default node role for managed machine pools
+    fargate:
+      disable: true # Set to false to enable creation of the default role for the fargate profiles
+
