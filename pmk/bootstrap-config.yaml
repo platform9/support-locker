@@ -7,4 +7,11 @@ spec:
       disable: false # Set to false to enable creation of the default node role for managed machine pools
     fargate:
       disable: true # Set to false to enable creation of the default role for the fargate profiles
-
+  clusterAPIControllers: # GetPolicy permissions required for AWSManagedMachinePool
+    disabled: false
+    extraStatements:
+      - Action:
+          - "iam:GetPolicy"
+        Effect: "Allow"
+        Resource:
+          - "*"
