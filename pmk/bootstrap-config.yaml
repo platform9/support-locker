@@ -12,6 +12,8 @@ spec:
     extraStatements:
       - Action:
           - "iam:GetPolicy"
+          - "ec2:DescribeRegions" # Permission required to fetch all the regions details
+          - "route53:ListHostedZones" # Permission required to fetch all the route53 hostedZones details
         Effect: "Allow"
         Resource:
           - "*"
