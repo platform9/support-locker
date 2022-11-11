@@ -406,6 +406,8 @@ Resources:
           Statement:
           - Action:
             - iam:GetPolicy
+            - ec2:DescribeRegions
+            - route53:ListHostedZones
             Effect: Allow
             Resource:
             - '*'
