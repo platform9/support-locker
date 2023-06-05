@@ -227,15 +227,18 @@ class MigrateVolume():
             'Name': 'attachment.instance-id',
             'Values': [instance_id, ]
         }]
-
-        response = self.ec2_client.describe_volumes(Filters=filter)
-        for vol in response["Volumes"]:
-            volume_id = vol["VolumeId"]
-            if vol["VolumeType"] == "gp2":
-                logger.info("Modifiying volume: %s", volume_id)
-                self.ec2_client.modify_volume(
-                    VolumeId=volume_id, VolumeType='gp3')
-            self.check_modification_status(volume_id)
+        try:
+            response = self.ec2_client.describe_volumes(Filters=filter)
+            for vol in response["Volumes"]:
+                volume_id = vol["VolumeId"]
+                if vol["VolumeType"] == "gp2":
+                    logger.info("Modifiying volume: %s", volume_id)
+                    self.ec2_client.modify_volume(
+                        VolumeId=volume_id, VolumeType='gp3')
+                self.check_modification_status(volume_id)
+        except Exception as err:
+            logger.error("Failed to migrate volume to GP3. Error: %s", str(err))
+            raise err
 
     def batch_migrate_volumes(self, instance_ids):
         threads = []
