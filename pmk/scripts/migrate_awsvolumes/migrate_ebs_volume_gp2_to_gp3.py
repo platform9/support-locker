@@ -9,6 +9,10 @@ pre-req:
 
 python3 migrate_ebs_volume_gp2_to_gp3.py --kdu="XXXX.platform9.horse" --tenant=test --username="XXXX@platform9.com" --password="XXXXXX" --cluster_id 6d99076d-8137-444a-bcaf-e165f873a9f7
 
+optional argument:
+    `workerbatchsize` by default set to 5 workers at a time
+    ex: python3 migrate_ebs_volume_gp2_to_gp3.py --kdu="XXXX.platform9.horse" --tenant=test --username="XXXX@platform9.com" --password="XXXXXX" --cluster_id 6d99076d-8137-444a-bcaf-e165f873a9f7 --workerbatchsize 10
+
 Note:
     Volume migration for master nodes are done sequentially
     for worker node we can have a batch of size 5 to migrate parallelly
@@ -255,13 +259,14 @@ if __name__ == '__main__':
     parser.add_argument('--cluster_id', type=str, required=True)
     parser.add_argument('--username', default="", type=str, required=True)
     parser.add_argument('--password', default="", type=str, required=True)
+    parser.add_argument('--workerbatchsize', default=5, type=int, required=False)
 
     args = parser.parse_args()
 
     qbertClient = QbertAPI(args.kdu, args.tenant, args.username, args.password)
     cluster_id = args.cluster_id
     migratevol = MigrateVolume()
-    batchSize = 5
+    batchSize = args.workerbatchsize
 
     try:
         # get cluster
@@ -286,12 +291,12 @@ if __name__ == '__main__':
 
         # Migrate volumes for worker nodes in batch of 5
         for i in range(0, len(worker_nodes), batchSize):
-            logger.info("Migrating workernodes (%s) to GP3 GP3 volumetype",
+            logger.info("Migrating worker nodes (%s) to GP3 volumetype",
                         worker_nodes[i:i + batchSize])
             migratevol.batch_migrate_volumes(worker_nodes[i:i + batchSize])
-            logger.info("Migration for workernodes(%s) volumes to GP3 done!",
+            logger.info("Migration for worker nodes(%s) volumes to GP3 done!",
                         worker_nodes[i:i + batchSize])
 
     except Exception as err:
-        logger.error("Fail to migrate volume. Error: %s", str(err))
+        logger.error("Failed to migrate volume. Error: %s", str(err))
         raise err
