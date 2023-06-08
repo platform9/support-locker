@@ -1,0 +1,193 @@
+❯ python3 migrate_ebs_volume_gp2_to_gp3.py --kdu="XXXXX.platform9.horse" --tenant=service --username="XXXXX@platform9.com" --password="XXXXX" --cluster_id 39cad808-66df-4d5b-a571-c836182318e0
+[2023-05-19 12:08:53,117] INFO - Found credentials in shared credentials file: ~/.aws/credentials
+[2023-05-19 12:08:53,162] INFO - Fetching cluster [39cad808-66df-4d5b-a571-c836182318e0] information.
+[2023-05-19 12:08:54,475] INFO - cluster nehatest00001
+[2023-05-19 12:08:55,752] INFO - Master nodes ['i-0a8eb82a4b2b67529'] Worker nodes ['i-0e1ee1eb6501800b1', 'i-0f368ee06e0e6776d', 'i-0d85f89e9197242f7', 'i-0fa5912a60a4e9c70', 'i-09b198950b8150744'] 
+[2023-05-19 12:08:55,753] INFO - Migrating masternode (nehatest00001) volumes to GP3
+[2023-05-19 12:08:55,753] INFO - Batch migrate_volume_to_GP3 for instance: i-0a8eb82a4b2b67529 
+[2023-05-19 12:08:57,391] INFO - Modifiying volume: vol-03f24576153545596
+[2023-05-19 12:08:57,837] INFO - Fetching modfication status for volume [vol-03f24576153545596].
+[2023-05-19 12:09:28,508] INFO - Polling volume vol-03f24576153545596 status: optimizing
+[2023-05-19 12:09:58,843] INFO - Polling volume vol-03f24576153545596 status: optimizing
+[2023-05-19 12:10:29,200] INFO - Polling volume vol-03f24576153545596 status: optimizing
+[2023-05-19 12:10:59,575] INFO - Polling volume vol-03f24576153545596 status: optimizing
+[2023-05-19 12:11:29,959] INFO - Polling volume vol-03f24576153545596 status: optimizing
+[2023-05-19 12:12:00,371] INFO - Polling volume vol-03f24576153545596 status: optimizing
+[2023-05-19 12:12:30,704] INFO - Polling volume vol-03f24576153545596 status: optimizing
+[2023-05-19 12:13:01,098] INFO - Polling volume vol-03f24576153545596 status: optimizing
+[2023-05-19 12:13:32,706] INFO - Polling volume vol-03f24576153545596 status: optimizing
+[2023-05-19 12:14:03,043] INFO - Polling volume vol-03f24576153545596 status: optimizing
+[2023-05-19 12:14:33,393] INFO - Polling volume vol-03f24576153545596 status: completed
+[2023-05-19 12:14:33,394] INFO - Volume modified: vol-03f24576153545596: completed. Total timetaken: 0:05:11
+[2023-05-19 12:14:33,396] INFO - Modifiying volume: vol-02aca5e10bf47b8d0
+[2023-05-19 12:14:33,865] INFO - Fetching modfication status for volume [vol-02aca5e10bf47b8d0].
+[2023-05-19 12:15:04,683] INFO - Polling volume vol-02aca5e10bf47b8d0 status: optimizing
+[2023-05-19 12:15:35,094] INFO - Polling volume vol-02aca5e10bf47b8d0 status: optimizing
+[2023-05-19 12:16:05,505] INFO - Polling volume vol-02aca5e10bf47b8d0 status: optimizing
+[2023-05-19 12:16:35,916] INFO - Polling volume vol-02aca5e10bf47b8d0 status: optimizing
+[2023-05-19 12:17:06,330] INFO - Polling volume vol-02aca5e10bf47b8d0 status: optimizing
+[2023-05-19 12:17:36,666] INFO - Polling volume vol-02aca5e10bf47b8d0 status: optimizing
+[2023-05-19 12:18:08,300] INFO - Polling volume vol-02aca5e10bf47b8d0 status: optimizing
+[2023-05-19 12:18:38,666] INFO - Polling volume vol-02aca5e10bf47b8d0 status: optimizing
+[2023-05-19 12:19:09,040] INFO - Polling volume vol-02aca5e10bf47b8d0 status: optimizing
+[2023-05-19 12:19:39,402] INFO - Polling volume vol-02aca5e10bf47b8d0 status: optimizing
+[2023-05-19 12:20:09,768] INFO - Polling volume vol-02aca5e10bf47b8d0 status: completed
+[2023-05-19 12:20:09,769] INFO - Volume modified: vol-02aca5e10bf47b8d0: completed. Total timetaken: 0:05:11
+[2023-05-19 12:20:09,773] INFO - Migrating workernodes (['i-0e1ee1eb6501800b1', 'i-0f368ee06e0e6776d', 'i-0d85f89e9197242f7']) to GP3 GP3 volumetype
+[2023-05-19 12:20:09,776] INFO - Batch migrate_volume_to_GP3 for instance: i-0e1ee1eb6501800b1 
+[2023-05-19 12:20:09,779] INFO - Batch migrate_volume_to_GP3 for instance: i-0f368ee06e0e6776d 
+[2023-05-19 12:20:09,779] INFO - Batch migrate_volume_to_GP3 for instance: i-0d85f89e9197242f7 
+[2023-05-19 12:20:10,179] INFO - Modifiying volume: vol-0a3b3e553ccc4c915
+[2023-05-19 12:20:10,626] INFO - Fetching modfication status for volume [vol-0a3b3e553ccc4c915].
+[2023-05-19 12:20:11,447] INFO - Modifiying volume: vol-0f4e79aa27f626b39
+[2023-05-19 12:20:11,462] INFO - Modifiying volume: vol-00c92eec781102f8c
+[2023-05-19 12:20:11,896] INFO - Fetching modfication status for volume [vol-0f4e79aa27f626b39].
+[2023-05-19 12:20:11,909] INFO - Fetching modfication status for volume [vol-00c92eec781102f8c].
+[2023-05-19 12:20:41,398] INFO - Polling volume vol-0a3b3e553ccc4c915 status: optimizing
+[2023-05-19 12:20:42,671] INFO - Polling volume vol-00c92eec781102f8c status: optimizing
+[2023-05-19 12:20:42,673] INFO - Polling volume vol-0f4e79aa27f626b39 status: optimizing
+[2023-05-19 12:21:11,729] INFO - Polling volume vol-0a3b3e553ccc4c915 status: optimizing
+[2023-05-19 12:21:12,998] INFO - Polling volume vol-00c92eec781102f8c status: optimizing
+[2023-05-19 12:21:13,010] INFO - Polling volume vol-0f4e79aa27f626b39 status: optimizing
+[2023-05-19 12:21:42,104] INFO - Polling volume vol-0a3b3e553ccc4c915 status: optimizing
+[2023-05-19 12:21:43,389] INFO - Polling volume vol-0f4e79aa27f626b39 status: optimizing
+[2023-05-19 12:21:43,391] INFO - Polling volume vol-00c92eec781102f8c status: optimizing
+[2023-05-19 12:22:12,468] INFO - Polling volume vol-0a3b3e553ccc4c915 status: optimizing
+[2023-05-19 12:22:13,801] INFO - Polling volume vol-00c92eec781102f8c status: optimizing
+[2023-05-19 12:22:13,803] INFO - Polling volume vol-0f4e79aa27f626b39 status: optimizing
+[2023-05-19 12:22:42,881] INFO - Polling volume vol-0a3b3e553ccc4c915 status: optimizing
+[2023-05-19 12:22:44,211] INFO - Polling volume vol-00c92eec781102f8c status: optimizing
+[2023-05-19 12:22:44,212] INFO - Polling volume vol-0f4e79aa27f626b39 status: optimizing
+[2023-05-19 12:23:13,212] INFO - Polling volume vol-0a3b3e553ccc4c915 status: optimizing
+[2023-05-19 12:23:14,539] INFO - Polling volume vol-00c92eec781102f8c status: optimizing
+[2023-05-19 12:23:14,545] INFO - Polling volume vol-0f4e79aa27f626b39 status: optimizing
+[2023-05-19 12:23:43,600] INFO - Polling volume vol-0a3b3e553ccc4c915 status: optimizing
+[2023-05-19 12:23:44,872] INFO - Polling volume vol-0f4e79aa27f626b39 status: optimizing
+[2023-05-19 12:23:44,908] INFO - Polling volume vol-00c92eec781102f8c status: optimizing
+[2023-05-19 12:24:14,014] INFO - Polling volume vol-0a3b3e553ccc4c915 status: optimizing
+[2023-05-19 12:24:15,240] INFO - Polling volume vol-00c92eec781102f8c status: optimizing
+[2023-05-19 12:24:16,516] INFO - Polling volume vol-0f4e79aa27f626b39 status: optimizing
+[2023-05-19 12:24:44,347] INFO - Polling volume vol-0a3b3e553ccc4c915 status: optimizing
+[2023-05-19 12:24:45,570] INFO - Polling volume vol-00c92eec781102f8c status: optimizing
+[2023-05-19 12:24:46,848] INFO - Polling volume vol-0f4e79aa27f626b39 status: optimizing
+[2023-05-19 12:25:14,691] INFO - Polling volume vol-0a3b3e553ccc4c915 status: optimizing
+[2023-05-19 12:25:15,961] INFO - Polling volume vol-00c92eec781102f8c status: optimizing
+[2023-05-19 12:25:17,191] INFO - Polling volume vol-0f4e79aa27f626b39 status: optimizing
+[2023-05-19 12:25:45,041] INFO - Polling volume vol-0a3b3e553ccc4c915 status: completed
+[2023-05-19 12:25:45,041] INFO - Volume modified: vol-0a3b3e553ccc4c915: completed. Total timetaken: 0:05:10
+[2023-05-19 12:25:45,042] INFO - Modifiying volume: vol-0f94e8ffa689d7482
+[2023-05-19 12:25:45,491] INFO - Fetching modfication status for volume [vol-0f94e8ffa689d7482].
+[2023-05-19 12:25:46,295] INFO - Polling volume vol-00c92eec781102f8c status: completed
+[2023-05-19 12:25:46,295] INFO - Volume modified: vol-00c92eec781102f8c: completed. Total timetaken: 0:05:11
+[2023-05-19 12:25:46,295] INFO - Modifiying volume: vol-0d1154eab71e83ff9
+[2023-05-19 12:25:46,754] INFO - Fetching modfication status for volume [vol-0d1154eab71e83ff9].
+[2023-05-19 12:25:47,601] INFO - Polling volume vol-0f4e79aa27f626b39 status: completed
+[2023-05-19 12:25:47,601] INFO - Volume modified: vol-0f4e79aa27f626b39: completed. Total timetaken: 0:05:11
+[2023-05-19 12:25:47,601] INFO - Modifiying volume: vol-0d59fd7f6da8ecea6
+[2023-05-19 12:25:48,061] INFO - Fetching modfication status for volume [vol-0d59fd7f6da8ecea6].
+[2023-05-19 12:26:16,169] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:26:17,506] INFO - Polling volume vol-0d1154eab71e83ff9 status: optimizing
+[2023-05-19 12:26:18,832] INFO - Polling volume vol-0d59fd7f6da8ecea6 status: optimizing
+[2023-05-19 12:26:46,515] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:26:47,912] INFO - Polling volume vol-0d1154eab71e83ff9 status: optimizing
+[2023-05-19 12:26:49,243] INFO - Polling volume vol-0d59fd7f6da8ecea6 status: optimizing
+[2023-05-19 12:27:16,851] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:27:18,242] INFO - Polling volume vol-0d1154eab71e83ff9 status: optimizing
+[2023-05-19 12:27:19,653] INFO - Polling volume vol-0d59fd7f6da8ecea6 status: optimizing
+[2023-05-19 12:27:47,187] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:27:48,631] INFO - Polling volume vol-0d1154eab71e83ff9 status: optimizing
+[2023-05-19 12:27:49,993] INFO - Polling volume vol-0d59fd7f6da8ecea6 status: optimizing
+[2023-05-19 12:28:17,610] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:28:20,205] INFO - Polling volume vol-0d1154eab71e83ff9 status: optimizing
+[2023-05-19 12:28:21,326] INFO - Polling volume vol-0d59fd7f6da8ecea6 status: optimizing
+[2023-05-19 12:28:48,024] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:28:50,544] INFO - Polling volume vol-0d1154eab71e83ff9 status: optimizing
+[2023-05-19 12:28:51,655] INFO - Polling volume vol-0d59fd7f6da8ecea6 status: optimizing
+[2023-05-19 12:29:18,432] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:29:20,892] INFO - Polling volume vol-0d1154eab71e83ff9 status: optimizing
+[2023-05-19 12:29:21,987] INFO - Polling volume vol-0d59fd7f6da8ecea6 status: optimizing
+[2023-05-19 12:29:48,843] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:29:51,302] INFO - Polling volume vol-0d1154eab71e83ff9 status: optimizing
+[2023-05-19 12:29:52,429] INFO - Polling volume vol-0d59fd7f6da8ecea6 status: optimizing
+[2023-05-19 12:30:19,257] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:30:21,638] INFO - Polling volume vol-0d1154eab71e83ff9 status: optimizing
+[2023-05-19 12:30:22,769] INFO - Polling volume vol-0d59fd7f6da8ecea6 status: optimizing
+[2023-05-19 12:30:49,589] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:30:51,966] INFO - Polling volume vol-0d1154eab71e83ff9 status: optimizing
+[2023-05-19 12:30:53,149] INFO - Polling volume vol-0d59fd7f6da8ecea6 status: optimizing
+[2023-05-19 12:31:19,922] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:31:22,332] INFO - Polling volume vol-0d1154eab71e83ff9 status: completed
+[2023-05-19 12:31:22,332] INFO - Volume modified: vol-0d1154eab71e83ff9: completed. Total timetaken: 0:05:11
+[2023-05-19 12:31:23,561] INFO - Polling volume vol-0d59fd7f6da8ecea6 status: completed
+[2023-05-19 12:31:23,561] INFO - Volume modified: vol-0d59fd7f6da8ecea6: completed. Total timetaken: 0:05:10
+[2023-05-19 12:31:50,287] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:32:20,697] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:32:52,354] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:33:22,687] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:33:53,147] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:34:23,557] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:34:53,905] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:35:24,280] INFO - Polling volume vol-0f94e8ffa689d7482 status: optimizing
+[2023-05-19 12:35:54,624] INFO - Polling volume vol-0f94e8ffa689d7482 status: completed
+[2023-05-19 12:35:54,624] INFO - Volume modified: vol-0f94e8ffa689d7482: completed. Total timetaken: 0:10:10
+[2023-05-19 12:35:54,626] INFO - Migration for workernodes(['i-0e1ee1eb6501800b1', 'i-0f368ee06e0e6776d', 'i-0d85f89e9197242f7']) volumes to GP3 done!
+[2023-05-19 12:35:54,627] INFO - Migrating workernodes (['i-0fa5912a60a4e9c70', 'i-09b198950b8150744']) to GP3 GP3 volumetype
+[2023-05-19 12:35:54,627] INFO - Batch migrate_volume_to_GP3 for instance: i-0fa5912a60a4e9c70 
+[2023-05-19 12:35:54,629] INFO - Batch migrate_volume_to_GP3 for instance: i-09b198950b8150744 
+[2023-05-19 12:35:55,007] INFO - Modifiying volume: vol-06566a9bc5d8b24d0
+[2023-05-19 12:35:55,453] INFO - Fetching modfication status for volume [vol-06566a9bc5d8b24d0].
+[2023-05-19 12:35:56,225] INFO - Modifiying volume: vol-09eac80d03906b935
+[2023-05-19 12:35:56,686] INFO - Fetching modfication status for volume [vol-09eac80d03906b935].
+[2023-05-19 12:36:26,148] INFO - Polling volume vol-06566a9bc5d8b24d0 status: optimizing
+[2023-05-19 12:36:27,440] INFO - Polling volume vol-09eac80d03906b935 status: optimizing
+[2023-05-19 12:36:56,486] INFO - Polling volume vol-06566a9bc5d8b24d0 status: optimizing
+[2023-05-19 12:36:57,788] INFO - Polling volume vol-09eac80d03906b935 status: optimizing
+[2023-05-19 12:37:26,822] INFO - Polling volume vol-06566a9bc5d8b24d0 status: optimizing
+[2023-05-19 12:37:28,117] INFO - Polling volume vol-09eac80d03906b935 status: optimizing
+[2023-05-19 12:37:57,256] INFO - Polling volume vol-06566a9bc5d8b24d0 status: optimizing
+[2023-05-19 12:37:58,485] INFO - Polling volume vol-09eac80d03906b935 status: optimizing
+[2023-05-19 12:38:27,669] INFO - Polling volume vol-06566a9bc5d8b24d0 status: optimizing
+[2023-05-19 12:38:28,828] INFO - Polling volume vol-09eac80d03906b935 status: optimizing
+[2023-05-19 12:38:58,011] INFO - Polling volume vol-06566a9bc5d8b24d0 status: optimizing
+[2023-05-19 12:38:59,204] INFO - Polling volume vol-09eac80d03906b935 status: optimizing
+[2023-05-19 12:39:28,386] INFO - Polling volume vol-06566a9bc5d8b24d0 status: optimizing
+[2023-05-19 12:39:29,616] INFO - Polling volume vol-09eac80d03906b935 status: optimizing
+[2023-05-19 12:39:58,801] INFO - Polling volume vol-06566a9bc5d8b24d0 status: optimizing
+[2023-05-19 12:40:01,331] INFO - Polling volume vol-09eac80d03906b935 status: optimizing
+[2023-05-19 12:40:29,211] INFO - Polling volume vol-06566a9bc5d8b24d0 status: optimizing
+[2023-05-19 12:40:31,671] INFO - Polling volume vol-09eac80d03906b935 status: optimizing
+[2023-05-19 12:40:59,619] INFO - Polling volume vol-06566a9bc5d8b24d0 status: optimizing
+[2023-05-19 12:41:02,079] INFO - Polling volume vol-09eac80d03906b935 status: optimizing
+[2023-05-19 12:41:29,987] INFO - Polling volume vol-06566a9bc5d8b24d0 status: completed
+[2023-05-19 12:41:29,987] INFO - Volume modified: vol-06566a9bc5d8b24d0: completed. Total timetaken: 0:05:12
+[2023-05-19 12:41:29,988] INFO - Modifiying volume: vol-090094ea7e60b709d
+[2023-05-19 12:41:30,494] INFO - Fetching modfication status for volume [vol-090094ea7e60b709d].
+[2023-05-19 12:41:32,411] INFO - Polling volume vol-09eac80d03906b935 status: completed
+[2023-05-19 12:41:32,411] INFO - Volume modified: vol-09eac80d03906b935: completed. Total timetaken: 0:05:09
+[2023-05-19 12:41:32,411] INFO - Modifiying volume: vol-056b21088885e3a6d
+[2023-05-19 12:41:32,852] INFO - Fetching modfication status for volume [vol-056b21088885e3a6d].
+[2023-05-19 12:42:01,292] INFO - Polling volume vol-090094ea7e60b709d status: optimizing
+[2023-05-19 12:42:03,508] INFO - Polling volume vol-056b21088885e3a6d status: optimizing
+[2023-05-19 12:42:31,621] INFO - Polling volume vol-090094ea7e60b709d status: optimizing
+[2023-05-19 12:42:33,846] INFO - Polling volume vol-056b21088885e3a6d status: optimizing
+[2023-05-19 12:43:01,953] INFO - Polling volume vol-090094ea7e60b709d status: optimizing
+[2023-05-19 12:43:04,179] INFO - Polling volume vol-056b21088885e3a6d status: optimizing
+[2023-05-19 12:43:32,292] INFO - Polling volume vol-090094ea7e60b709d status: optimizing
+[2023-05-19 12:43:34,509] INFO - Polling volume vol-056b21088885e3a6d status: optimizing
+[2023-05-19 12:44:02,658] INFO - Polling volume vol-090094ea7e60b709d status: optimizing
+[2023-05-19 12:44:06,064] INFO - Polling volume vol-056b21088885e3a6d status: optimizing
+[2023-05-19 12:44:32,996] INFO - Polling volume vol-090094ea7e60b709d status: optimizing
+[2023-05-19 12:44:36,398] INFO - Polling volume vol-056b21088885e3a6d status: optimizing
+[2023-05-19 12:45:03,346] INFO - Polling volume vol-090094ea7e60b709d status: optimizing
+[2023-05-19 12:45:06,730] INFO - Polling volume vol-056b21088885e3a6d status: optimizing
+[2023-05-19 12:45:33,680] INFO - Polling volume vol-090094ea7e60b709d status: optimizing
+[2023-05-19 12:45:37,067] INFO - Polling volume vol-056b21088885e3a6d status: optimizing
+[2023-05-19 12:46:04,038] INFO - Polling volume vol-090094ea7e60b709d status: optimizing
+[2023-05-19 12:46:07,398] INFO - Polling volume vol-056b21088885e3a6d status: optimizing
+[2023-05-19 12:46:34,378] INFO - Polling volume vol-090094ea7e60b709d status: optimizing
+[2023-05-19 12:46:37,735] INFO - Polling volume vol-056b21088885e3a6d status: optimizing
+[2023-05-19 12:47:04,712] INFO - Polling volume vol-090094ea7e60b709d status: completed
+[2023-05-19 12:47:04,712] INFO - Volume modified: vol-090094ea7e60b709d: completed. Total timetaken: 0:05:08
+[2023-05-19 12:47:08,066] INFO - Polling volume vol-056b21088885e3a6d status: completed
+[2023-05-19 12:47:08,066] INFO - Volume modified: vol-056b21088885e3a6d: completed. Total timetaken: 0:05:16
+[2023-05-19 12:47:08,066] INFO - Migration for workernodes(['i-0fa5912a60a4e9c70', 'i-09b198950b8150744']) volumes to GP3 done!
