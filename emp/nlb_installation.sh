@@ -22,7 +22,6 @@ if [ -z "$policy_arn" ]; then
         --policy-name EMPAWSLoadBalancerControllerIAMPolicy \
         --policy-document file://iam_policy.json
 
-    # Error handling
     if [ $? -ne 0 ]; then
         print_error "An error occurred while creating the IAM policy."
         exit 1
