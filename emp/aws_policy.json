@@ -32,6 +32,7 @@
                 "ec2:CreateSecurityGroup",
                 "ec2:CreateSubnet",
                 "ec2:CreateVpc",
+                "ec2:CreateTags",
                 "ec2:DeleteInternetGateway",
                 "ec2:DeleteNatGateway",
                 "ec2:DeleteRoute",
@@ -58,6 +59,7 @@
                 "ec2:DescribeVpcClassicLink",
                 "ec2:DescribeVpcClassicLinkDnsSupport",
                 "ec2:DescribeVpcs",
+                "ec2:DescribeTags",
                 "ec2:DetachInternetGateway",
                 "ec2:DisassociateRouteTable",
                 "ec2:ImportKeyPair",
@@ -99,6 +101,7 @@
                 "iam:AddRoleToInstanceProfile",
                 "iam:CreateInstanceProfile",
                 "iam:CreateRole",
+                "iam:CreateServiceLinkedRole",
                 "iam:DeleteInstanceProfile",
                 "iam:DeleteRole",
                 "iam:DeleteRolePolicy",
@@ -241,32 +244,6 @@
                 "kms:DescribeKey"
             ],
             "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "iam:CreateServiceLinkedRole",
-            "Resource": "*",
-            "Condition": {
-                "StringEquals": {
-                    "iam:AWSServiceName": "elasticloadbalancing.amazonaws.com"
-                }
-            }
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ec2:DescribeTags"
-            ],
-            "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ec2:CreateTags"
-            ],
-            "Resource": [
-                "arn:aws:ec2:*:*:network-interface/*"
-            ]
         },
         {
             "Effect": "Allow",
