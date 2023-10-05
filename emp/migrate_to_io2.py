@@ -59,6 +59,16 @@ class MigrateVolume:
                 return
             volume_info = response['Volumes'][0]
 
+            # Check if the volume is attached anywhere if not process else throw error and exit
+            if len(volume_info['Attachments']) > 0:
+                for attachment in volume_info['Attachments']:
+                    if attachment['State'] == 'detached':
+                        logger.info('detached')
+                        continue
+                    else:
+                        logger.info('Failed to modify volume %s to io2 as volume already attached to an instance(%s) and cannot be modified to enable Multi-Attach while the volume is attached.', volume_id, attachment['InstanceId'])
+                        raise SystemExit
+
             # Calculate iops based on the volume size and IOPS/GB
             iops = self.calculate_iops(volume_info['Size'], iops_per_gb)
 
@@ -67,7 +77,8 @@ class MigrateVolume:
             self.ec2_client.modify_volume(
                 VolumeId=volume_id,
                 VolumeType='io2',
-                Iops=iops
+                Iops=iops,
+                MultiAttachEnabled=True
             )
 
             self.check_modification_status(volume_id)
