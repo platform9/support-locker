@@ -5,7 +5,22 @@ Parameters:
     Type: String
     Default: 'platform9-emp-user'
     Description: '(Required) IAM User Name created for EMP'
+  S3BucketPrefix:
+    Type: String
+    Default: 'emp-loki'
+    Description: '(Required) S3 Bucket Name Prefix for EMP Log Management'
 Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Sub:
+        - "${BucketNamePrefix}-${AccountIdSuffix}"
+        - BucketNamePrefix: !Ref S3BucketPrefix
+          AccountIdSuffix: !Ref AWS::AccountId
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Enabled
   IAMUser:
     Type: AWS::IAM::User
     Properties:
@@ -250,8 +265,8 @@ Resources:
           - s3:ListBucket
           - s3:PutObject
           Resource:
-          - "arn:aws:s3:::emp-loki-*/*"
-          - "arn:aws:s3:::emp-loki-*"
+          - !Sub 'arn:${AWS::Partition}:s3:::${S3BucketPrefix}-*'
+          - !Sub 'arn:${AWS::Partition}:s3:::${S3BucketPrefix}-*/*'
 
 Outputs:
   AccessKeyId:
