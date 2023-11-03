@@ -258,6 +258,7 @@ Resources:
           - ecr:ListImages
           - ecr:ListTagsForResource
           - kms:DescribeKey
+          - pricing:GetProducts
           Resource: "*"
         - Effect: Allow
           Action:
