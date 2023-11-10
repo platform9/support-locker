@@ -216,6 +216,7 @@ Resources:
           - iam:DeleteInstanceProfile
           - iam:DeleteRole
           - iam:DeleteRolePolicy
+          - iam:DetachRolePolicy
           - iam:GetInstanceProfile
           - iam:GetRole
           - iam:GetRolePolicy
