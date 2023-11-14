@@ -59,7 +59,7 @@ try:
             baseline_name = baseline.get('BaselineName')
             baseline_description = baseline.get('BaselineDescription')
             data = {
-                "UBUNTU": {
+                os_type: {
                     "value": baseline_id,
                     "label": baseline_name,
                     "description": baseline_description,
