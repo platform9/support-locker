@@ -17,7 +17,7 @@ Resources:
   Policy1:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      ManagedPolicyName: Platform9EMPCustomPolicy01
+      ManagedPolicyName: !Sub '${IAMUserName}-policy01'
       Description: 'Part 1 of required policies for Platform9 EMP'
       Users:
       - !Ref IAMUser
@@ -151,7 +151,7 @@ Resources:
   Policy2:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      ManagedPolicyName: Platform9EMPCustomPolicy02
+      ManagedPolicyName: !Sub '${IAMUserName}-policy02'
       Description: 'Part 2 of required policies for Platform9 EMP'
       Users:
       - !Ref IAMUser
