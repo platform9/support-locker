@@ -1,0 +1,23 @@
+apiVersion: emp.pf9.io/v1alpha1
+kind: ElasticMachinePool
+metadata:
+  name: emp-test
+spec:
+  # AWS Cloud Credentials reference through which we can access all EKS clusters.
+  cloudProviderRef:
+    apiGroup: emp.pf9.io/v1alpha1
+    kind: AWSCredentials
+    name: aws-qa-creds
+  
+  # List of EKSClusters to imported under this EMP
+  clusterRefs:
+    - apiGroup: emp.pf9.io/v1alpha1
+      kind: EKSCluster 
+      name: emp-eks-cluster
+  
+  # vpc peering disabled
+  peeringEnable: false
+  
+  # Enabling this will auto attach the baremetealPool security (which gets created post successful BMPool creation)
+  # to all EKS Cluster security groups provided.
+  bmSecurityGroupAttachToEKS: true

@@ -1,0 +1,185 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-secret
+data:
+  # base64 encoded
+  AccessKeyID: <BASE64 encoded AccessKeyID>
+  SecretAccessKey: <BASE64 encoded SecretKey>
+---
+apiVersion: emp.pf9.io/v1alpha1
+kind: AWSCredentials
+metadata:
+  name: aws-qa-creds
+spec:
+  # Reference to cloud provider credentials secret
+  secretRef: aws-secret
+---
+apiVersion: emp.pf9.io/v1alpha1
+kind: EKSCluster
+metadata:
+  name: emp-eks-cluster
+spec:
+  # EKS cluster name as in AWS
+  clusterName: emp-eks-cluster
+  
+  # AWS region where the EKS cluster is running
+  clusterRegion: us-east-1
+  
+  # AWS Cloud Credentials reference through which we can access this EKS cluster.
+  cloudProviderRef:
+    apiGroup: emp.pf9.io/v1alpha1
+    kind: AWSCredentials
+    name: aws-qa-creds
+  
+  # EKS Cluster Security groups ID (list)
+  securityGroups:
+    - "sg-01ec63883149b003d"
+---
+apiVersion: emp.pf9.io/v1alpha1
+kind: ElasticMachinePool
+metadata:
+  name: emp-test
+spec:
+  # AWS Cloud Credentials reference through which we can access all EKS clusters.
+  cloudProviderRef:
+    apiGroup: emp.pf9.io/v1alpha1
+    kind: AWSCredentials
+    name: aws-qa-creds
+  
+  # List of EKSClusters to imported under this EMP
+  clusterRefs:
+    - apiGroup: emp.pf9.io/v1alpha1
+      kind: EKSCluster 
+      name: emp-eks-cluster
+  
+  # vpc peering disabled
+  peeringEnable: false
+  
+  # Enabling this will auto attach the baremetealPool security (which gets created post successful BMPool creation)
+  # to all EKS Cluster security groups provided.
+  bmSecurityGroupAttachToEKS: true
+---
+apiVersion: emp.pf9.io/v1alpha1
+kind: BaremetalPool
+metadata:
+  name: bm-test
+spec:
+  # Elastic Machine Pool object name to which baremetal pool is linked to.
+  empName: emp-test
+  # Baremetal Pool template.
+  poolTemplate: 
+    
+    # AWS EC2 metal instance type/flavor
+    instanceType: m5.metal
+
+    ami:
+      # For us-east-1 platform9 AMI ID - ami-07f258b65c6b2b925
+      # For us-west-2 platform9 AMI ID - ami-013a0bf9c7a62047e
+      # us-east-1
+      id: ami-07f258b65c6b2b925
+    
+    # aws ssh key name
+    sshKey: qa-emp
+    region: us-east-1
+    azs:
+      - us-east-1a
+      - us-east-1b
+      - us-east-1c
+    
+    # Network configuration for baremetal pool
+    network:
+      # AWS VPC to consider to host baremetal machines.
+      vpc:  
+        id: vpc-0ee66d01a874305d5
+      
+      # List of subnets to be consider to host baremetal machines.
+      subnets:
+        # private subnet
+        - id: subnet-012bbe7302b8c8b90
+          isPrivate: true
+          az: us-east-1a
+        - id: subnet-0c1228e1c204e9a18
+          isPrivate: true
+          az: us-east-1b
+        - id: subnet-012bb8d0d4aef9ea8
+          isPrivate: true
+          az: us-east-1c
+        # public NAT subnet
+        - id: subnet-0c0127713bbab9ad1
+          isPrivate: false
+          az: us-east-1a
+        - id: subnet-03fc122ea4adb96f5
+          isPrivate: false
+          az: us-east-1b
+        - id: subnet-0128ed1d460b9b761
+          isPrivate: false
+          az: us-east-1c
+    # count of minimum machines/instances required in pool
+    minMachines: 2
+
+    # count of maximum machines/instances to be allowed to create in pool
+    maxMachines: 10
+---
+apiVersion: emp.pf9.io/v1alpha1
+kind: EVMPool
+metadata:
+  name: evmpool-1
+spec:
+  os:
+    # only ubuntu is supported (currently)
+    family: ubuntu
+  
+  # EKS cluster reference to which the EVMs nodes to be attached.
+  eksClusterRef:
+    apiGroup: emp.pf9.io/v1alpha1
+    kind: EKSCluster 
+    name: emp-eks-cluster
+  empName: emp-test
+  
+  # EMP Resources overcommitment multipler
+  overcommitMultipler:
+    cpu: 3
+    memory: 2.5
+
+  rootDiskConfig:
+    size: 50Gi
+  
+  instanceType: m5.8xlarge 
+  
+  # Base64 encoded SSH key   
+  sshKey:  <Encoded-Public-SSHKEY>
+
+  # Minimum number of EVMs to spawn up using this EVMPool template
+  minEVMs: 14
+---
+apiVersion: emp.pf9.io/v1alpha1
+kind: EVMPool
+metadata:
+  name: evmpool-2
+spec:
+  # EVM OS specification
+  os:
+    family: ubuntu
+
+  # EKS cluster reference to which the EVMs nodes to be attached.
+  eksClusterRef:
+    apiGroup: emp.pf9.io/v1alpha1
+    kind: EKSCluster 
+    name: emp-eks-cluster
+  empName: emp-test
+
+  overcommitMultipler:
+    cpu: 3
+    memory: 2.5
+
+  rootDiskConfig:
+    size: 50Gi
+  
+  instanceType: m5.xlarge 
+  
+  # Base64 encoded SSH key  
+  sshKey:  <Encoded-Public-SSHKEY>
+ 
+  # Minimum number of EVMs to spawn up using this EVMPool template
+  minEVMs: 4
