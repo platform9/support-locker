@@ -1,0 +1,30 @@
+apiVersion: emp.pf9.io/v1alpha1
+kind: EVMPool
+metadata:
+  name: evmpool-1
+spec:
+  os:
+    # only ubuntu is supported (currently)
+    family: ubuntu
+  
+  # EKS cluster reference to which the EVMs nodes to be attached.
+  eksClusterRef:
+    apiGroup: emp.pf9.io/v1alpha1
+    kind: EKSCluster 
+    name: emp-eks-cluster
+  empName: emp-test
+  
+  # EMP Resources overcommitment multipler
+  overcommitMultipler:
+    cpu: 3
+    memory: 2.5
+
+  rootDiskConfig:
+    size: 50Gi
+  instanceType: m5.8xlarge 
+  
+  # Base64 encoded SSH key   
+  sshKey:  <Encoded-Public-SSHKEY>
+
+  # Minimum number of EVMs to spawn up using this EVMPool template
+  minEVMs: 14

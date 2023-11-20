@@ -1,0 +1,20 @@
+apiVersion: emp.pf9.io/v1alpha1
+kind: EKSCluster
+metadata:
+  name: emp-eks-cluster
+spec:
+  # EKS cluster name as in AWS
+  clusterName: emp-eks-cluster
+  
+  # AWS region where the EKS cluster is running
+  clusterRegion: us-east-1
+  
+  # AWS Cloud Credentials reference through which we can access this EKS cluster.
+  cloudProviderRef:
+    apiGroup: emp.pf9.io/v1alpha1
+    kind: AWSCredentials
+    name: aws-qa-creds
+  
+  # EKS Cluster Security groups ID (list)
+  securityGroups:
+    - "sg-01ec6xxxxx"

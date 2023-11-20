@@ -1,0 +1,65 @@
+apiVersion: emp.pf9.io/v1alpha1
+kind: BaremetalPool
+metadata:
+  name: bm-test
+spec:
+  # Elastic Machine Pool object name to which baremetal pool is linked to.
+  empName: emp-test
+  # Baremetal Pool template.
+  poolTemplate: 
+    
+    # AWS EC2 metal instance type/flavor
+    instanceType: m5.metal
+
+    ami:
+      # For us-east-1 platform9 AMI ID - ami-07f258b65c6b2b925
+      # For us-west-2 platform9 AMI ID - ami-013a0bf9c7a62047e
+      # us-east-1
+      id: ami-07f258b65c6b2b925
+    
+    # aws ssh key name
+    sshKey: qa-emp
+
+    # AWS Region (currently supported us-west-2, us-east-1)
+    region: us-east-1
+
+    # Available zones under given region to be considered for hosting baremetal machines 
+    azs:
+      - us-east-1a
+      - us-east-1b
+      - us-east-1c
+    
+    # Network configuration for baremetal pool
+    network:
+      # AWS VPC to consider to host baremetal machines.
+      vpc:  
+        id: vpc-0ee66xxxxx
+      
+      # List of subnets to be consider to host baremetal machines.
+      # Public + Private Subnet for each AZ provided
+      subnets:
+        # private subnet
+        - id: subnet-012bbxxxxx
+          isPrivate: true
+          az: us-east-1a
+        - id: subnet-0c122xxxxx
+          isPrivate: true
+          az: us-east-1b
+        - id: subnet-012bbxxxxx
+          isPrivate: true
+          az: us-east-1c
+        # public NAT subnet
+        - id: subnet-0c012xxxxx
+          isPrivate: false
+          az: us-east-1a
+        - id: subnet-03fc1xxxxx
+          isPrivate: false
+          az: us-east-1b
+        - id: subnet-0128exxxxx
+          isPrivate: false
+          az: us-east-1c
+    # count of minimum machines/instances required in pool
+    minMachines: 2
+
+    # count of maximum machines/instances to be allowed to create in pool
+    maxMachines: 10
