@@ -177,7 +177,7 @@ spec:
     size: 50Gi
   
   instanceType: m5.xlarge 
-  
+
   # Base64 encoded SSH key  
   sshKey:  <Encoded-Public-SSHKEY>
  
