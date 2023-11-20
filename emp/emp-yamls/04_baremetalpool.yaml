@@ -19,7 +19,11 @@ spec:
     
     # aws ssh key name
     sshKey: qa-emp
+
+    # AWS Region (currently supported us-west-2, us-east-1)
     region: us-east-1
+
+    # Available zones under given region to be considered for hosting baremetal machines 
     azs:
       - us-east-1a
       - us-east-1b
@@ -29,28 +33,29 @@ spec:
     network:
       # AWS VPC to consider to host baremetal machines.
       vpc:  
-        id: vpc-0ee66d01a874305d5
+        id: vpc-0ee66xxxxx
       
       # List of subnets to be consider to host baremetal machines.
+      # Public + Private Subnet for each AZ provided
       subnets:
         # private subnet
-        - id: subnet-012bbe7302b8c9b90
+        - id: subnet-012bbxxxxx
           isPrivate: true
           az: us-east-1a
-        - id: subnet-0c1228e1c204e3a18
+        - id: subnet-0c122xxxxx
           isPrivate: true
           az: us-east-1b
-        - id: subnet-012bb8d0d4aef8ea8
+        - id: subnet-012bbxxxxx
           isPrivate: true
           az: us-east-1c
         # public NAT subnet
-        - id: subnet-0c0127713bbab8ad1
+        - id: subnet-0c012xxxxx
           isPrivate: false
           az: us-east-1a
-        - id: subnet-03fc122ea4adb66f5
+        - id: subnet-03fc1xxxxx
           isPrivate: false
           az: us-east-1b
-        - id: subnet-0128ed1d460b8b761
+        - id: subnet-0128exxxxx
           isPrivate: false
           az: us-east-1c
     # count of minimum machines/instances required in pool

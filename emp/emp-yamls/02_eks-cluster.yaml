@@ -17,4 +17,4 @@ spec:
   
   # EKS Cluster Security groups ID (list)
   securityGroups:
-    - "sg-01ec63883149b003d"
+    - "sg-01ec6xxxxx"
