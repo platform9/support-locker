@@ -39,7 +39,7 @@ uninstall_cert_manager() {
 }
 
 detach_iam_policy() {
-    policy_arn=$(aws iam list-policies --query "Policies[?PolicyName=='EMPAWSLoadBalancerControllerIAMPolicy'].Arn" --output text)
+    policy_arn=$(aws iam list-policies --query "Policies[?PolicyName=='"${cluster_name}_LBPolicy"'].Arn" --output text)
 
     if [ -n "$policy_arn" ]; then
         role_name=$(aws iam list-entities-for-policy --policy-arn "$policy_arn" --query "PolicyRoles[].RoleName" --output text)
@@ -66,7 +66,7 @@ delete_iam_service_account() {
 }
 
 delete_iam_policy() {
-    policy_arn=$(aws iam list-policies --query "Policies[?PolicyName=='EMPAWSLoadBalancerControllerIAMPolicy'].Arn" --output text)
+    policy_arn=$(aws iam list-policies --query "Policies[?PolicyName=='"${cluster_name}_LBPolicy"'].Arn" --output text)
 
     if [ -n "$policy_arn" ]; then
         aws iam delete-policy --policy-arn "$policy_arn"
@@ -96,7 +96,11 @@ fi
 read -p "Enter the EKS cluster name: " cluster_name
 read -p "Enter the AWS region: " region
 
-uninstall_aws_load_balancer_controller
+# Delete the AWSLoadBalancerController
+read -p "Do you want to delete the AWSLoadBalancerController? (y/n): " delete_awsLBController
+if [[ "$delete_awsLBController" =~ ^[Yy]$ ]]; then
+    uninstall_aws_load_balancer_controller
+fi
 
 # Delete the IngressClass and IngressClassParams (if installed)
 read -p "Do you want to delete the IngressClass and IngressClassParams? (y/n): " delete_ingress_class

@@ -11,20 +11,21 @@ print_success() {
 create_iam_policy() {
     echo "Creating IAM policy"
     aws iam create-policy \
-        --policy-name EMPAWSLoadBalancerControllerIAMPolicy \
-        --policy-document file://iam_policy.json
+        --policy-name "${cluster_name}_LBPolicy" \
+        --policy-document file://iam_policy.json \
+        &> /dev/null
 
     if [ $? -ne 0 ]; then
         print_error "An error occurred while creating the IAM policy."
         exit 1
     fi
 
-    print_success "IAM Policy created successfully. Copy this Policy ARN:"
-    aws iam list-policies --query "Policies[?PolicyName=='EMPAWSLoadBalancerControllerIAMPolicy'].Arn" --output text
+    policy_arn=$(aws iam list-policies --query "Policies[?PolicyName=='"${cluster_name}_LBPolicy"'].Arn" --output text)
+    print_success "IAM Policy created successfully."
 }
 
 delete_iam_policy() {
-    echo "Deleting current IAM policy"
+    echo "Deleting existing IAM policy"
     # Get the policy ARN and versions
     versions=$(aws iam list-policy-versions --policy-arn "$policy_arn" --query "Versions[?IsDefaultVersion==\`false\`].VersionId" --output text)
 
@@ -59,15 +60,15 @@ delete_iam_policy() {
         exit 1
     fi
 
-    print_success "IAM Policy EMPAWSLoadBalancerControllerIAMPolicy deleted successfully."
+    print_success "IAM Policy "${cluster_name}_LBPolicy" deleted successfully."
 }
 
 create_iam_service_account() {
     echo "Creating IAM service account"
-    if ! eksctl create iamserviceaccount --cluster="$cluster_name" --namespace=kube-system --name=aws-load-balancer-controller --role-name=EMPAmazonEKSLoadBalancerControllerRole --attach-policy-arn="$policy_arn" --approve --region="$region" --override-existing-serviceaccounts; then
+    if ! eksctl create iamserviceaccount --cluster="$cluster_name" --namespace=kube-system --name=aws-load-balancer-controller --role-name=${cluster_name}_LBRole --attach-policy-arn="$policy_arn" --approve --region="$region" --override-existing-serviceaccounts; then
         print_error "An error occurred while creating the IAM service account."
         # rolling back service account creation as it leaves residue in AWS (CloudStack and Role)
-        rollback_serviceAccount_creation        
+        rollback_serviceAccount_creation
         exit 1
     fi
 
@@ -75,7 +76,7 @@ create_iam_service_account() {
 }
 
 rollback_serviceAccount_creation () {
-    policy_arn=$(aws iam list-policies --query "Policies[?PolicyName=='EMPAWSLoadBalancerControllerIAMPolicy'].Arn" --output text)
+    policy_arn=$(aws iam list-policies --query "Policies[?PolicyName=='"${cluster_name}_LBPolicy"'].Arn" --output text)
 
     if [ -n "$policy_arn" ]; then
         role_name=$(aws iam list-entities-for-policy --policy-arn "$policy_arn" --query "PolicyRoles[].RoleName" --output text)
@@ -98,8 +99,8 @@ rollback_serviceAccount_creation () {
 install_cert_manager() {
     curl -Lo cert-manager.yaml https://github.com/jetstack/cert-manager/releases/download/v1.5.4/cert-manager.yaml
 
-    # Would work only on the managed node, so commenting this for now    
-    # Adding tolerations to delpoy on EVM nodes
+    # Would work only on the managed node, so commenting this for now
+    # Adding tolerations to deploy on EVM nodes
     # sed -i '16928i\      tolerations:\n      - effect: NoSchedule\n        key: emp.pf9.io/EMPSchedulable\n        value: "true"' cert-manager.yaml
     # sed -i '16986i\      tolerations:\n      - effect: NoSchedule\n        key: emp.pf9.io/EMPSchedulable\n        value: "true"' cert-manager.yaml
     # sed -i '17063i\      tolerations:\n      - effect: NoSchedule\n        key: emp.pf9.io/EMPSchedulable\n        value: "true"' cert-manager.yaml
@@ -196,14 +197,17 @@ if ! command -v aws &> /dev/null; then
     exit 1
 fi
 
+read -p "Enter the EKS cluster name: " cluster_name
+read -p "Enter the AWS region: " region
+
 echo "Checking if IAM policy already exists"
 # check for existing iam policies
-policy_arn=$(aws iam list-policies --query "Policies[?PolicyName=='EMPAWSLoadBalancerControllerIAMPolicy'].Arn" --output text)
+policy_arn=$(aws iam list-policies --query "Policies[?PolicyName=='"${cluster_name}_LBPolicy"'].Arn" --output text)
 
 if [ -z "$policy_arn" ]; then
     create_iam_policy
 else
-    echo "IAM policy EMPAWSLoadBalancerControllerIAMPolicy already exists."
+    echo "IAM policy "${cluster_name}_LBPolicy" already exists."
     read -p "Do you want to delete the current policy and create a new one? (y/n): " choice
 
     # Run the deletion script
@@ -212,20 +216,15 @@ else
         create_iam_policy
     else
         echo "Skipping policy creation."
-        print_success "Existing IAM Policy ARN:"
-        aws iam list-policies --query "Policies[?PolicyName=='EMPAWSLoadBalancerControllerIAMPolicy'].Arn" --output text
+        policy_arn=$(aws iam list-policies --query "Policies[?PolicyName=='"${cluster_name}_LBPolicy"'].Arn" --output text)
     fi
 fi
 
 # check for eksctl
 if ! command -v eksctl &> /dev/null; then
-    print_error "eksctl is not installed. Please follow the installation instructions at: https://github.com/weaveworks/eksctl/blob/main/README.md#installation"
+    print_error "eksctl is not installed. Please follow the installation instructions at: https://eksctl.io/installation/"
     exit 1
 fi
-
-read -p "Enter the EKS cluster name: " cluster_name
-read -p "Enter the AWS region: " region
-read -p "Enter the Policy ARN: " policy_arn
 
 eksctl utils associate-iam-oidc-provider --region=$region --cluster=$cluster_name --approve
 
