@@ -140,6 +140,7 @@ Resources:
           - autoscaling:DescribeAutoScalingInstances
           - autoscaling:SetDesiredCapacity
           - autoscaling:SetInstanceProtection
+          - s3:PutObject
           Resource: "*"
         - Effect: Allow
           Action:
