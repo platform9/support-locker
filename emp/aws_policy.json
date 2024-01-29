@@ -5,6 +5,7 @@
             "Effect": "Allow",
             "Action": [
                 "autoscaling:AttachLoadBalancers",
+                "autoscaling:AttachInstances",
                 "autoscaling:CreateAutoScalingGroup",
                 "autoscaling:CreateLaunchConfiguration",
                 "autoscaling:CreateOrUpdateTags",
@@ -46,6 +47,7 @@
                 "ec2:DescribeAvailabilityZones",
                 "ec2:DescribeImages",
                 "ec2:DescribeInstances",
+                "ec2:DescribeInstanceAttribute",
                 "ec2:DescribeInternetGateways",
                 "ec2:DescribeKeyPairs",
                 "ec2:DescribeNatGateways",
@@ -131,11 +133,9 @@
                 "autoscaling:SetDesiredCapacity",
                 "autoscaling:SetInstanceProtection",
                 "ec2:DescribeInstanceTypes",
-                "ec2:DescribeSecurityGroup",
                 "ec2:DescribeSecurityGroupRules",
                 "ec2:ModifyInstanceMetadataOptions",
                 "ec2:ModifySecurityGroupRules",
-                "ec2:UpdateSecurityGroup",
                 "ec2:UpdateSecurityGroupRuleDescriptionsEgress",
                 "ec2:UpdateSecurityGroupRuleDescriptionsIngress",
                 "eks:CreateNodegroup",
@@ -155,7 +155,8 @@
                 "elasticfilesystem:ListTagsForResource",
                 "elasticfilesystem:TagResource",
                 "elasticfilesystem:UntagResource",
-                "elasticfilesystem:UpdateFileSystem"
+                "elasticfilesystem:UpdateFileSystem",
+                "s3:PutObject"
             ],
             "Resource": "*"
         },
@@ -220,6 +221,8 @@
                 "ec2:DetachVolume",
                 "ec2:ModifyInstanceAttribute",
                 "ec2:ModifyVolume",
+                "ec2:GetLaunchTemplateData",
+                "ec2:DescribeInstanceStatus",
                 "elasticloadbalancing:CreateListener",
                 "elasticloadbalancing:CreateLoadBalancerPolicy",
                 "elasticloadbalancing:CreateTargetGroup",
