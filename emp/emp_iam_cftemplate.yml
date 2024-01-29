@@ -52,6 +52,7 @@ Resources:
           - ec2:DescribeAvailabilityZones
           - ec2:DescribeImages
           - ec2:DescribeInstances
+          - ec2:DescribeInstanceAttribute
           - ec2:DescribeInternetGateways
           - ec2:DescribeKeyPairs
           - ec2:DescribeNatGateways
@@ -105,6 +106,8 @@ Resources:
           - ec2:DetachVolume
           - ec2:ModifyInstanceAttribute
           - ec2:ModifyVolume
+          - ec2:GetLaunchTemplateData
+          - ec2:DescribeInstanceStatus
           - eks:AccessKubernetesApi
           - eks:DescribeAddon
           - eks:DescribeAddonVersions
@@ -122,6 +125,7 @@ Resources:
           - eks:ListUpdates
           - eks:CreateNodegroup
           - autoscaling:AttachLoadBalancers
+          - autoscaling:AttachInstances
           - autoscaling:CreateAutoScalingGroup
           - autoscaling:CreateLaunchConfiguration
           - autoscaling:CreateOrUpdateTags
