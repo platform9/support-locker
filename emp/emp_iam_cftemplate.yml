@@ -106,7 +106,6 @@ Resources:
           - ec2:DetachVolume
           - ec2:ModifyInstanceAttribute
           - ec2:ModifyVolume
-          - ec2:GetLaunchTemplateData
           - ec2:DescribeInstanceStatus
           - eks:AccessKubernetesApi
           - eks:DescribeAddon
@@ -250,6 +249,19 @@ Resources:
           - ecr:ListTagsForResource
           - kms:DescribeKey
           - pricing:GetProducts
+          - route53:ListHostedZones
+          - route53:ChangeResourceRecordSets
+          - route53:GetChange
+          - route53:GetHostedZone
+          - route53:ListResourceRecordSets
+          - ec2:CreateLaunchTemplate
+          - ec2:DescribeLaunchTemplates
+          - ec2:DescribeLaunchTemplateVersions
+          - ec2:GetLaunchTemplateData
+          - ec2:CreateLaunchTemplateVersion
+          - ec2:DeleteLaunchTemplate
+          - ec2:DeleteLaunchTemplateVersions
+          - ec2:ModifyLaunchTemplate
           Resource: "*"
 Outputs:
   AccessKeyId:
