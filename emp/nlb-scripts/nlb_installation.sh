@@ -99,13 +99,26 @@ rollback_serviceAccount_creation () {
 install_cert_manager() {
     curl -Lo cert-manager.yaml https://github.com/jetstack/cert-manager/releases/download/v1.5.4/cert-manager.yaml
 
-    # Would work only on the managed node, so commenting this for now
-    # Adding tolerations to deploy on EVM nodes
-    # sed -i '16928i\      tolerations:\n      - effect: NoSchedule\n        key: emp.pf9.io/EMPSchedulable\n        value: "true"' cert-manager.yaml
-    # sed -i '16986i\      tolerations:\n      - effect: NoSchedule\n        key: emp.pf9.io/EMPSchedulable\n        value: "true"' cert-manager.yaml
-    # sed -i '17063i\      tolerations:\n      - effect: NoSchedule\n        key: emp.pf9.io/EMPSchedulable\n        value: "true"' cert-manager.yaml
+    yq -s '"file_" + $index' cert-manager.yaml
+    for file in file_*.yml; do
+        # Check if the file contains "kind: Deployment"
+        deployment=$(yq '.kind == "Deployment"' "$file")
+        if [ "$deployment" = true ] ; then
+            # Add toleration to the file
+            yq e -i '.spec.template.spec.tolerations += [{"effect": "NoSchedule",  "key": "emp.pf9.io/EMPSchedulable", "value": "true"}]' "$file" > /dev/null
+            nameOfDeployment=$(yq 'select(.kind == "Deployment") | .metadata.name' "$file")
+            echo "EMP Tolerations added to $nameOfDeployment"
+        else
+            echo &> /dev/null
+        fi
+        nsDeployment=$(yq '.kind == "Namespace"' "$file")
+        if [ "$nsDeployment" = true ]; then
+          kubectl apply -f "$file"
+        fi
 
-    kubectl apply --validate=false -f cert-manager.yaml
+    done
+    yq '.' file_*.yml >> cert_manager.yaml
+    kubectl apply -f cert_manager.yaml
 
     if [ $? -ne 0 ]; then
         print_error "An error occurred while installing cert-manager."
@@ -125,6 +138,7 @@ install_cert_manager() {
             exit 1
         fi
     fi
+    rm -rf file_*
     # wait for all pods to be in ready state
     kubectl wait --for=condition=Ready pods --all -n cert-manager
     # adding wait for all resources to get ready
@@ -134,17 +148,32 @@ install_cert_manager() {
 }
 
 install_aws_load_balancer_controller() {
-    curl -Lo v2_4_7_full.yaml https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases/download/v2.4.7/v2_4_7_full.yaml
-    sed -i.bak -e '561,569d' ./v2_4_7_full.yaml
-    sed -i.bak -e 's|your-cluster-name|'"$cluster_name"'|' ./v2_4_7_full.yaml
-    kubectl apply -f v2_4_7_full.yaml
+    curl -Lo v2_5_4_full.yaml https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases/download/v2.5.4/v2_5_4_full.yaml
+    sed -i.bak -e '596,604d' ./v2_5_4_full.yaml
+    sed -i.bak -e 's|your-cluster-name|'"$cluster_name"'|' ./v2_5_4_full.yaml
+    yq -s '"file_" + $index' v2_5_4_full.yaml
+    for file in file_*.yml; do
+        # Check if the file contains "kind: Deployment"
+        deployment=$(yq '.kind == "Deployment"' "$file")
+        if [ "$deployment" = true ] ; then
+            # Add toleration to the file
+            yq e -i '.spec.template.spec.tolerations += [{"effect": "NoSchedule",  "key": "emp.pf9.io/EMPSchedulable", "value": "true"}]' "$file" > /dev/null
+            nameOfDeployment=$(yq 'select(.kind == "Deployment") | .metadata.name' "$file")
+            echo "EMP Tolerations added to $nameOfDeployment"
+        else
+            echo &> /dev/null
+        fi
+
+    done
+    yq '.' file_*.yml >> v2_5_4-full.yaml
+    kubectl apply -f v2_5_4-full.yaml
 
     if [ $? -ne 0 ]; then
         print_error "An error occurred while applying the controller specification."
         read -p "Do you want to rollback controller specification installation? (y/n): " controller_spec
 
         if [[ "$controller_spec" =~ ^[Yy]$ ]]; then
-            kubectl delete --ignore-not-found=true -f v2_4_7_full.yaml
+            kubectl delete --ignore-not-found=true -f v2_5_4_full.yaml
 
             if [ $? -ne 0 ]; then
                 print_error "An error occurred while rolling back the controller specification installation."
@@ -157,19 +186,20 @@ install_aws_load_balancer_controller() {
             exit 1
         fi
     fi
+    rm -rf file_*
     print_success "AWS load balancer controller installed successfully."
 }
 
 install_ingress_class() {
-    curl -Lo v2_4_7_ingclass.yaml https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases/download/v2.4.7/v2_4_7_ingclass.yaml
-    kubectl apply -f v2_4_7_ingclass.yaml
+    curl -Lo v2_5_4_ingclass.yaml https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases/download/v2.5.4/v2_5_4_ingclass.yaml
+    kubectl apply -f v2_5_4_ingclass.yaml
 
     if [ $? -ne 0 ]; then
         print_error "An error occurred while installing ingressclass and ingressclassparams."
         read -p "Do you want to rollback ingress installation? (y/n): " ingress
 
         if [[ "$ingress" =~ ^[Yy]$ ]]; then
-            kubectl delete --ignore-not-found=true -f v2_4_7_ingclass.yaml
+            kubectl delete --ignore-not-found=true -f v2_5_4_ingclass.yaml
 
             if [ $? -ne 0 ]; then
                 print_error "An error occurred while rolling back the ingress installation."
@@ -227,7 +257,6 @@ if ! command -v eksctl &> /dev/null; then
 fi
 
 eksctl utils associate-iam-oidc-provider --region=$region --cluster=$cluster_name --approve
-
 create_iam_service_account
 
 read -p "Do you want to install cert-manager? (y/n): " install_cert_manager

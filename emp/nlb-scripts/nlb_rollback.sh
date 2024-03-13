@@ -1,4 +1,5 @@
 #!/bin/bash
+# Run this script from the same folder where the installation script was executed.
 
 print_error() {
     echo -e "\e[91m$1\e[0m"
@@ -9,7 +10,7 @@ print_success() {
 }
 
 uninstall_aws_load_balancer_controller() {
-    kubectl delete --ignore-not-found=true -f v2_4_7_full.yaml
+    kubectl delete --ignore-not-found=true -f v2_5_4_full.yaml
     if [ $? -ne 0 ]; then
         print_error "An error occurred while deleting the AWS Load Balancer Controller."
         exit 1
@@ -19,7 +20,7 @@ uninstall_aws_load_balancer_controller() {
 }
 
 delete_ingress_class() {
-    kubectl delete --ignore-not-found=true -f v2_4_7_ingclass.yaml
+    kubectl delete --ignore-not-found=true -f v2_5_4_ingclass.yaml
     if [ $? -ne 0 ]; then
         print_error "An error occurred while deleting IngressClass and IngressClassParams."
         exit 1
