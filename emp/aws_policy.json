@@ -118,6 +118,7 @@
                 "iam:PassRole",
                 "iam:PutRolePolicy",
                 "iam:RemoveRoleFromInstanceProfile",
+                "iam:UntagRole",
                 "route53:ChangeResourceRecordSets",
                 "route53:GetChange",
                 "route53:GetHostedZone",
