@@ -216,6 +216,7 @@ Resources:
           - iam:PassRole
           - iam:PutRolePolicy
           - iam:RemoveRoleFromInstanceProfile
+          - iam:UntagRole
           - elasticfilesystem:Backup
           - elasticfilesystem:CreateAccessPoint
           - elasticfilesystem:CreateFileSystem
