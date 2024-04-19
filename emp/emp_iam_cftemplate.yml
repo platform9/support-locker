@@ -52,6 +52,7 @@ Resources:
           - ec2:DescribeAvailabilityZones
           - ec2:DescribeImages
           - ec2:DescribeInstances
+          - ec2:DescribeSpotInstanceRequests
           - ec2:DescribeInstanceAttribute
           - ec2:DescribeInternetGateways
           - ec2:DescribeKeyPairs
