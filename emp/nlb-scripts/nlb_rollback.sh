@@ -110,13 +110,6 @@ if [[ "$delete_ingress_class" =~ ^[Yy]$ ]]; then
     delete_ingress_class
 fi
 
-# Delete cert-manager (if installed)
-read -p "Do you want to uninstall cert-manager? (y/n): " uninstall_cert_manager
-
-if [[ "$uninstall_cert_manager" =~ ^[Yy]$ ]]; then
-    uninstall_cert_manager
-fi
-
 detach_iam_policy
 delete_iam_service_account
 delete_iam_policy
