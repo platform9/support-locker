@@ -53,7 +53,12 @@
                 "ec2:RevokeSecurityGroupEgress",
                 "ec2:RevokeSecurityGroupIngress",
                 "ec2:RunInstances",
-                "ec2:TerminateInstances"
+                "ec2:TerminateInstances",
+                "ec2:DescribeLaunchTemplates",
+                "ec2:CreateLaunchTemplate",
+                "ec2:DescribeLaunchTemplateVersions",
+                "ec2:DeleteLaunchTemplate",
+                "ec2:DescribeSecurityGroupRules"
             ],
             "Resource": [
                 "*"
