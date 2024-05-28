@@ -29,16 +29,6 @@ delete_ingress_class() {
     print_success "IngressClass and IngressClassParams deleted successfully."
 }
 
-uninstall_cert_manager() {
-    kubectl delete --ignore-not-found=true -f cert-manager.yaml
-    if [ $? -ne 0 ]; then
-        print_error "An error occurred while uninstalling cert-manager."
-        exit 1
-    fi
-
-    print_success "cert-manager uninstalled successfully."
-}
-
 detach_iam_policy() {
     policy_arn=$(aws iam list-policies --query "Policies[?PolicyName=='"${cluster_name}_LBPolicy"'].Arn" --output text)
 
@@ -108,13 +98,6 @@ read -p "Do you want to delete the IngressClass and IngressClassParams? (y/n): "
 
 if [[ "$delete_ingress_class" =~ ^[Yy]$ ]]; then
     delete_ingress_class
-fi
-
-# Delete cert-manager (if installed)
-read -p "Do you want to uninstall cert-manager? (y/n): " uninstall_cert_manager
-
-if [[ "$uninstall_cert_manager" =~ ^[Yy]$ ]]; then
-    uninstall_cert_manager
 fi
 
 detach_iam_policy

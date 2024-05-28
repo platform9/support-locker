@@ -96,57 +96,6 @@ rollback_serviceAccount_creation () {
     fi
 }
 
-install_cert_manager() {
-    curl -Lo cert-manager.yaml https://github.com/jetstack/cert-manager/releases/download/v1.5.4/cert-manager.yaml
-
-    yq -s '"file_" + $index' cert-manager.yaml
-    for file in file_*.yml; do
-        # Check if the file contains "kind: Deployment"
-        deployment=$(yq '.kind == "Deployment"' "$file")
-        if [ "$deployment" = true ] ; then
-            # Add toleration to the file
-            yq e -i '.spec.template.spec.tolerations += [{"effect": "NoSchedule",  "key": "emp.pf9.io/EMPSchedulable", "value": "true"}]' "$file" > /dev/null
-            nameOfDeployment=$(yq 'select(.kind == "Deployment") | .metadata.name' "$file")
-            echo "EMP Tolerations added to $nameOfDeployment"
-        else
-            echo &> /dev/null
-        fi
-        nsDeployment=$(yq '.kind == "Namespace"' "$file")
-        if [ "$nsDeployment" = true ]; then
-          kubectl apply -f "$file"
-        fi
-
-    done
-    yq '.' file_*.yml >> cert_manager.yaml
-    kubectl apply -f cert_manager.yaml
-
-    if [ $? -ne 0 ]; then
-        print_error "An error occurred while installing cert-manager."
-        read -p "Do you want to rollback cert-manager changes? (y/n): " rollback_cert_manager
-
-        if [[ "$rollback_cert_manager" =~ ^[Yy]$ ]]; then
-            kubectl delete --ignore-not-found=true -f cert-manager.yaml
-
-            if [ $? -ne 0 ]; then
-                print_error "An error occurred while rolling back cert-manager installation."
-                exit 1
-            fi
-
-            echo "cert-manager installation rolled back successfully."
-            exit 1
-        else
-            exit 1
-        fi
-    fi
-    rm -rf file_*
-    # wait for all pods to be in ready state
-    kubectl wait --for=condition=Ready pods --all -n cert-manager
-    # adding wait for all resources to get ready
-    sleep 10
-
-    print_success "cert-manager installed successfully."
-}
-
 install_aws_load_balancer_controller() {
     curl -Lo v2_5_4_full.yaml https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases/download/v2.5.4/v2_5_4_full.yaml
     sed -i.bak -e '596,604d' ./v2_5_4_full.yaml
@@ -258,12 +207,6 @@ fi
 
 eksctl utils associate-iam-oidc-provider --region=$region --cluster=$cluster_name --approve
 create_iam_service_account
-
-read -p "Do you want to install cert-manager? (y/n): " install_cert_manager
-
-if [[ "$install_cert_manager" =~ ^[Yy]$ ]]; then
-    install_cert_manager
-fi
 
 install_aws_load_balancer_controller
 
