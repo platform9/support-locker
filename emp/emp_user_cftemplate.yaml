@@ -1,12 +1,30 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
-  RoleName:
+  IAMUserName:
     Type: String
-    Description: The name of the IAM role and instance profile.
-    Default: 'pf9-emp-role'
+    Description: The name of the User for PF9.
+    Default: 'pf9-emp-user'
 
 Resources:
   # CAPA Policies
+  AWSIAMInstanceProfileControlPlane:
+    Properties:
+      InstanceProfileName: control-plane.cluster-api-provider-aws.sigs.k8s.io
+      Roles:
+      - Ref: AWSIAMRoleControlPlane
+    Type: AWS::IAM::InstanceProfile
+  AWSIAMInstanceProfileControllers:
+    Properties:
+      InstanceProfileName: controllers.cluster-api-provider-aws.sigs.k8s.io
+      Roles:
+      - Ref: AWSIAMRoleControllers
+    Type: AWS::IAM::InstanceProfile
+  AWSIAMInstanceProfileNodes:
+    Properties:
+      InstanceProfileName: nodes.cluster-api-provider-aws.sigs.k8s.io
+      Roles:
+      - Ref: AWSIAMRoleNodes
+    Type: AWS::IAM::InstanceProfile
   AWSIAMManagedPolicyCloudProviderControlPlane:
     Properties:
       Description: For the Kubernetes Cloud Provider AWS Control Plane
@@ -451,20 +469,11 @@ Resources:
       RoleName: nodes.cluster-api-provider-aws.sigs.k8s.io
     Type: AWS::IAM::Role
 # PF9 Role and Policies
-  EKSRole:
-    Type: 'AWS::IAM::Role'
+
+  PF9User:
+    Type: AWS::IAM::User
     Properties:
-      RoleName: !Ref RoleName
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: 'Allow'
-            Principal:
-              Service: 
-                - 'ec2.amazonaws.com'
-              AWS:
-                - 'arn:aws:iam::617350239289:root'
-            Action: 'sts:AssumeRole'
+      UserName: !Ref IAMUserName
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonEKSClusterPolicy'
         - 'arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy'
@@ -476,9 +485,10 @@ Resources:
         - !Ref AWSIAMManagedPolicyControllersEKS
 
   PF9EMPPolicy:
+    DependsOn: PF9User
     Properties:
       Description: EMP PF9 Policy
-      ManagedPolicyName: emp-policy
+      ManagedPolicyName: pf9-emp-policy
       PolicyDocument:
         Statement:
         - Action:
@@ -515,11 +525,6 @@ Resources:
           - iam:SimulateCustomPolicy
           Resource:
             - '*'
-          Effect: Allow
-        - Action:
-          - 'iam:PassRole'
-          Resource: 
-          - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${EKSRole}'
           Effect: Allow
         - Action:
           - elasticfilesystem:Backup
@@ -590,21 +595,21 @@ Resources:
             - '*'
           Effect: Allow
         Version: 2012-10-17
-      Roles:
-      - Ref: RoleName
+      Users:
+      - Ref: IAMUserName
     Type: AWS::IAM::ManagedPolicy
 
-  # Define the Instance Profile for EMP
-  EMPInstanceProfile:
-    Type: 'AWS::IAM::InstanceProfile'
+  PF9UserSecrets:
+    Type: AWS::IAM::AccessKey
+    DependsOn: PF9User
     Properties:
-      InstanceProfileName: !Ref RoleName
-      Roles:
-        - !Ref EKSRole
+      UserName: !Ref IAMUserName
 
 Outputs:
-  RoleArnOutput:
-    Description: The ARN of the IAM role created.
-    Value: !GetAtt EKSRole.Arn
-    Export:
-      Name: !Sub '${AWS::StackName}-RoleArn'
+  AccessKeyId:
+    Description: "Access Key ID for the IAM user"
+    Value: !Ref PF9UserSecrets
+
+  SecretAccessKey:
+    Description: "Secret Access Key for the IAM user"
+    Value: !GetAtt PF9UserSecrets.SecretAccessKey
