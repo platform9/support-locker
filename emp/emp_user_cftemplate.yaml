@@ -516,10 +516,10 @@ Resources:
           Effect: Allow
         - Action:
           - iam:GetInstanceProfile
-          - iam:GetRole
-          - iam:GetRolePolicy
-          - iam:ListAttachedRolePolicies
-          - iam:ListRolePolicies
+          - iam:GetUser
+          - iam:GetUserPolicy
+          - iam:ListAttachedUserPolicies
+          - iam:ListUserPolicies
           - iam:GetPolicy
           - iam:GetPolicyVersion
           - iam:SimulateCustomPolicy
