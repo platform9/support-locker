@@ -74,8 +74,6 @@ Resources:
           Resource:
           - '*'
         Version: 2012-10-17
-      Roles:
-      - Ref: AWSIAMRoleControlPlane
     Type: AWS::IAM::ManagedPolicy
   AWSIAMManagedPolicyCloudProviderNodes:
     Properties:
@@ -118,9 +116,6 @@ Resources:
           Resource:
           - '*'
         Version: 2012-10-17
-      Roles:
-      - Ref: AWSIAMRoleControlPlane
-      - Ref: AWSIAMRoleNodes
     Type: AWS::IAM::ManagedPolicy
   AWSIAMManagedPolicyControllers:
     Properties:
@@ -282,9 +277,6 @@ Resources:
           Resource:
           - arn:*:secretsmanager:*:*:secret:aws.cluster.x-k8s.io/*
         Version: 2012-10-17
-      Roles:
-      - Ref: AWSIAMRoleControllers
-      - Ref: AWSIAMRoleControlPlane
     Type: AWS::IAM::ManagedPolicy
   AWSIAMManagedPolicyControllersEKS:
     Properties:
@@ -389,67 +381,7 @@ Resources:
           Resource:
           - '*'
         Version: 2012-10-17
-      Roles:
-      - Ref: AWSIAMRoleControllers
-      - Ref: AWSIAMRoleControlPlane
     Type: AWS::IAM::ManagedPolicy
-  AWSIAMRoleControlPlane:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-        - Action:
-          - sts:AssumeRole
-          Effect: Allow
-          Principal:
-            Service:
-            - ec2.amazonaws.com
-        Version: 2012-10-17
-      RoleName: !Sub "${RoleName}-control-plane.cluster-api-provider-aws.sigs.k8s.io"
-    Type: AWS::IAM::Role
-  AWSIAMRoleControllers:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-        - Action:
-          - sts:AssumeRole
-          Effect: Allow
-          Principal:
-            Service:
-            - ec2.amazonaws.com
-        Version: 2012-10-17
-      RoleName: !Sub "${RoleName}-controllers.cluster-api-provider-aws.sigs.k8s.io"
-    Type: AWS::IAM::Role
-  AWSIAMRoleEKSControlPlane:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-        - Action:
-          - sts:AssumeRole
-          Effect: Allow
-          Principal:
-            Service:
-            - eks.amazonaws.com
-        Version: 2012-10-17
-      ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
-      RoleName: !Sub "${RoleName}-eks-controlplane.cluster-api-provider-aws.sigs.k8s.io"
-    Type: AWS::IAM::Role
-  AWSIAMRoleNodes:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-        - Action:
-          - sts:AssumeRole
-          Effect: Allow
-          Principal:
-            Service:
-            - ec2.amazonaws.com
-        Version: 2012-10-17
-      ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
-      - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
-      RoleName: !Sub "${RoleName}-nodes.cluster-api-provider-aws.sigs.k8s.io"
-    Type: AWS::IAM::Role
 # PF9 Role and Policies
   EKSRole:
     Type: 'AWS::IAM::Role'
