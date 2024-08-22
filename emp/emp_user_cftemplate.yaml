@@ -2,33 +2,33 @@ AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
   IAMUserName:
     Type: String
-    Description: The name of the User for PF9.
-    Default: 'pf9-emp-user'
+    Description: Name of the user.
+    Default: 'pf9user'
 
 Resources:
   # CAPA Policies
   AWSIAMInstanceProfileControlPlane:
     Properties:
-      InstanceProfileName: control-plane.cluster-api-provider-aws.sigs.k8s.io
+      InstanceProfileName: !Sub "${IAMUserName}-control-plane.cluster-api-provider-aws.sigs.k8s.io"
       Roles:
       - Ref: AWSIAMRoleControlPlane
     Type: AWS::IAM::InstanceProfile
   AWSIAMInstanceProfileControllers:
     Properties:
-      InstanceProfileName: controllers.cluster-api-provider-aws.sigs.k8s.io
+      InstanceProfileName: !Sub "${IAMUserName}-controllers.cluster-api-provider-aws.sigs.k8s.io"
       Roles:
       - Ref: AWSIAMRoleControllers
     Type: AWS::IAM::InstanceProfile
   AWSIAMInstanceProfileNodes:
     Properties:
-      InstanceProfileName: nodes.cluster-api-provider-aws.sigs.k8s.io
+      InstanceProfileName: !Sub "${IAMUserName}-nodes.cluster-api-provider-aws.sigs.k8s.io"
       Roles:
       - Ref: AWSIAMRoleNodes
     Type: AWS::IAM::InstanceProfile
   AWSIAMManagedPolicyCloudProviderControlPlane:
     Properties:
       Description: For the Kubernetes Cloud Provider AWS Control Plane
-      ManagedPolicyName: control-plane.cluster-api-provider-aws.sigs.k8s.io
+      ManagedPolicyName: !Sub "${IAMUserName}-control-plane.cluster-api-provider-aws.sigs.k8s.io"
       PolicyDocument:
         Statement:
         - Action:
@@ -98,7 +98,7 @@ Resources:
   AWSIAMManagedPolicyCloudProviderNodes:
     Properties:
       Description: For the Kubernetes Cloud Provider AWS nodes
-      ManagedPolicyName: nodes.cluster-api-provider-aws.sigs.k8s.io
+      ManagedPolicyName: !Sub "${IAMUserName}-nodes.cluster-api-provider-aws.sigs.k8s.io"
       PolicyDocument:
         Statement:
         - Action:
@@ -143,7 +143,7 @@ Resources:
   AWSIAMManagedPolicyControllers:
     Properties:
       Description: For the Kubernetes Cluster API Provider AWS Controllers
-      ManagedPolicyName: controllers.cluster-api-provider-aws.sigs.k8s.io
+      ManagedPolicyName: !Sub "${IAMUserName}-controllers.cluster-api-provider-aws.sigs.k8s.io"
       PolicyDocument:
         Statement:
         - Action:
@@ -307,7 +307,7 @@ Resources:
   AWSIAMManagedPolicyControllersEKS:
     Properties:
       Description: For the Kubernetes Cluster API Provider AWS Controllers
-      ManagedPolicyName: controllers-eks.cluster-api-provider-aws.sigs.k8s.io
+      ManagedPolicyName: !Sub "${IAMUserName}-controllers-eks.cluster-api-provider-aws.sigs.k8s.io"
       PolicyDocument:
         Statement:
         - Action:
@@ -422,7 +422,7 @@ Resources:
             Service:
             - ec2.amazonaws.com
         Version: 2012-10-17
-      RoleName: control-plane.cluster-api-provider-aws.sigs.k8s.io
+      RoleName: !Sub "${IAMUserName}-control-plane.cluster-api-provider-aws.sigs.k8s.io"
     Type: AWS::IAM::Role
   AWSIAMRoleControllers:
     Properties:
@@ -435,7 +435,7 @@ Resources:
             Service:
             - ec2.amazonaws.com
         Version: 2012-10-17
-      RoleName: controllers.cluster-api-provider-aws.sigs.k8s.io
+      RoleName: !Sub "${IAMUserName}-controllers.cluster-api-provider-aws.sigs.k8s.io"
     Type: AWS::IAM::Role
   AWSIAMRoleEKSControlPlane:
     Properties:
@@ -450,7 +450,7 @@ Resources:
         Version: 2012-10-17
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
-      RoleName: eks-controlplane.cluster-api-provider-aws.sigs.k8s.io
+      RoleName: !Sub "${IAMUserName}-eks-controlplane.cluster-api-provider-aws.sigs.k8s.io"
     Type: AWS::IAM::Role
   AWSIAMRoleNodes:
     Properties:
@@ -466,7 +466,7 @@ Resources:
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
       - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
-      RoleName: nodes.cluster-api-provider-aws.sigs.k8s.io
+      RoleName: !Sub "${IAMUserName}-nodes.cluster-api-provider-aws.sigs.k8s.io"
     Type: AWS::IAM::Role
 # PF9 Role and Policies
 
@@ -488,7 +488,7 @@ Resources:
     DependsOn: PF9User
     Properties:
       Description: EMP PF9 Policy
-      ManagedPolicyName: pf9-emp-policy
+      ManagedPolicyName: !Sub "${IAMUserName}-emp-policy"
       PolicyDocument:
         Statement:
         - Action:
