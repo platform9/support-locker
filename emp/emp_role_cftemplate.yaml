@@ -7,74 +7,6 @@ Parameters:
 
 Resources:
   # CAPA Policies
-  AWSIAMManagedPolicyCloudProviderControlPlane:
-    Properties:
-      Description: For the Kubernetes Cloud Provider AWS Control Plane
-      ManagedPolicyName: !Sub "${RoleName}-control-plane.cluster-api-provider-aws.sigs.k8s.io"
-      PolicyDocument:
-        Statement:
-        - Action:
-          - autoscaling:DescribeAutoScalingGroups
-          - autoscaling:DescribeLaunchConfigurations
-          - autoscaling:DescribeTags
-          - ec2:AssignIpv6Addresses
-          - ec2:DescribeInstances
-          - ec2:DescribeImages
-          - ec2:DescribeRegions
-          - ec2:DescribeRouteTables
-          - ec2:DescribeSecurityGroups
-          - ec2:DescribeSubnets
-          - ec2:DescribeVolumes
-          - ec2:CreateSecurityGroup
-          - ec2:CreateTags
-          - ec2:CreateVolume
-          - ec2:ModifyInstanceAttribute
-          - ec2:ModifyVolume
-          - ec2:AttachVolume
-          - ec2:AuthorizeSecurityGroupIngress
-          - ec2:CreateRoute
-          - ec2:DeleteRoute
-          - ec2:DeleteSecurityGroup
-          - ec2:DeleteVolume
-          - ec2:DetachVolume
-          - ec2:RevokeSecurityGroupIngress
-          - ec2:DescribeVpcs
-          - elasticloadbalancing:AddTags
-          - elasticloadbalancing:AttachLoadBalancerToSubnets
-          - elasticloadbalancing:ApplySecurityGroupsToLoadBalancer
-          - elasticloadbalancing:CreateLoadBalancer
-          - elasticloadbalancing:CreateLoadBalancerPolicy
-          - elasticloadbalancing:CreateLoadBalancerListeners
-          - elasticloadbalancing:ConfigureHealthCheck
-          - elasticloadbalancing:DeleteLoadBalancer
-          - elasticloadbalancing:DeleteLoadBalancerListeners
-          - elasticloadbalancing:DescribeLoadBalancers
-          - elasticloadbalancing:DescribeLoadBalancerAttributes
-          - elasticloadbalancing:DetachLoadBalancerFromSubnets
-          - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
-          - elasticloadbalancing:ModifyLoadBalancerAttributes
-          - elasticloadbalancing:RegisterInstancesWithLoadBalancer
-          - elasticloadbalancing:SetLoadBalancerPoliciesForBackendServer
-          - elasticloadbalancing:CreateListener
-          - elasticloadbalancing:CreateTargetGroup
-          - elasticloadbalancing:DeleteListener
-          - elasticloadbalancing:DeleteTargetGroup
-          - elasticloadbalancing:DeregisterTargets
-          - elasticloadbalancing:DescribeListeners
-          - elasticloadbalancing:DescribeLoadBalancerPolicies
-          - elasticloadbalancing:DescribeTargetGroups
-          - elasticloadbalancing:DescribeTargetHealth
-          - elasticloadbalancing:ModifyListener
-          - elasticloadbalancing:ModifyTargetGroup
-          - elasticloadbalancing:RegisterTargets
-          - elasticloadbalancing:SetLoadBalancerPoliciesOfListener
-          - iam:CreateServiceLinkedRole
-          - kms:DescribeKey
-          Effect: Allow
-          Resource:
-          - '*'
-        Version: 2012-10-17
-    Type: AWS::IAM::ManagedPolicy
   AWSIAMManagedPolicyCloudProviderNodes:
     Properties:
       Description: For the Kubernetes Cloud Provider AWS nodes
@@ -278,110 +210,6 @@ Resources:
           - arn:*:secretsmanager:*:*:secret:aws.cluster.x-k8s.io/*
         Version: 2012-10-17
     Type: AWS::IAM::ManagedPolicy
-  AWSIAMManagedPolicyControllersEKS:
-    Properties:
-      Description: For the Kubernetes Cluster API Provider AWS Controllers
-      ManagedPolicyName: !Sub "${RoleName}-controllers-eks.cluster-api-provider-aws.sigs.k8s.io"
-      PolicyDocument:
-        Statement:
-        - Action:
-          - ssm:GetParameter
-          Effect: Allow
-          Resource:
-          - arn:*:ssm:*:*:parameter/aws/service/eks/optimized-ami/*
-        - Action:
-          - iam:CreateServiceLinkedRole
-          Condition:
-            StringLike:
-              iam:AWSServiceName: eks.amazonaws.com
-          Effect: Allow
-          Resource:
-          - arn:*:iam::*:role/aws-service-role/eks.amazonaws.com/AWSServiceRoleForAmazonEKS
-        - Action:
-          - iam:CreateServiceLinkedRole
-          Condition:
-            StringLike:
-              iam:AWSServiceName: eks-nodegroup.amazonaws.com
-          Effect: Allow
-          Resource:
-          - arn:*:iam::*:role/aws-service-role/eks-nodegroup.amazonaws.com/AWSServiceRoleForAmazonEKSNodegroup
-        - Action:
-          - iam:CreateServiceLinkedRole
-          Condition:
-            StringLike:
-              iam:AWSServiceName: eks-fargate.amazonaws.com
-          Effect: Allow
-          Resource:
-          - arn:aws:iam::*:role/aws-service-role/eks-fargate-pods.amazonaws.com/AWSServiceRoleForAmazonEKSForFargate
-        - Action:
-          - iam:GetRole
-          - iam:ListAttachedRolePolicies
-          Effect: Allow
-          Resource:
-          - arn:*:iam::*:role/*
-        - Action:
-          - iam:GetPolicy
-          Effect: Allow
-          Resource:
-          - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
-        - Action:
-          - eks:DescribeCluster
-          - eks:ListClusters
-          - eks:CreateCluster
-          - eks:TagResource
-          - eks:UpdateClusterVersion
-          - eks:DeleteCluster
-          - eks:UpdateClusterConfig
-          - eks:UntagResource
-          - eks:UpdateNodegroupVersion
-          - eks:DescribeNodegroup
-          - eks:DeleteNodegroup
-          - eks:UpdateNodegroupConfig
-          - eks:CreateNodegroup
-          - eks:AssociateEncryptionConfig
-          - eks:ListIdentityProviderConfigs
-          - eks:AssociateIdentityProviderConfig
-          - eks:DescribeIdentityProviderConfig
-          - eks:DisassociateIdentityProviderConfig
-          Effect: Allow
-          Resource:
-          - arn:*:eks:*:*:cluster/*
-          - arn:*:eks:*:*:nodegroup/*/*/*
-        - Action:
-          - ec2:AssociateVpcCidrBlock
-          - ec2:DisassociateVpcCidrBlock
-          - eks:ListAddons
-          - eks:CreateAddon
-          - eks:DescribeAddonVersions
-          - eks:DescribeAddon
-          - eks:DeleteAddon
-          - eks:UpdateAddon
-          - eks:TagResource
-          - eks:DescribeFargateProfile
-          - eks:CreateFargateProfile
-          - eks:DeleteFargateProfile
-          Effect: Allow
-          Resource:
-          - '*'
-        - Action:
-          - iam:PassRole
-          Condition:
-            StringEquals:
-              iam:PassedToService: eks.amazonaws.com
-          Effect: Allow
-          Resource:
-          - '*'
-        - Action:
-          - kms:CreateGrant
-          - kms:DescribeKey
-          Condition:
-            ForAnyValue:StringLike:
-              kms:ResourceAliases: alias/cluster-api-provider-aws-*
-          Effect: Allow
-          Resource:
-          - '*'
-        Version: 2012-10-17
-    Type: AWS::IAM::ManagedPolicy
 # PF9 Role and Policies
   EKSRole:
     Type: 'AWS::IAM::Role'
@@ -392,7 +220,7 @@ Resources:
         Statement:
           - Effect: 'Allow'
             Principal:
-              Service: 
+              Service:
                 - 'ec2.amazonaws.com'
               AWS:
                 - 'arn:aws:iam::617350239289:root'
@@ -402,11 +230,8 @@ Resources:
         - 'arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy'
         - 'arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy'
         - 'arn:aws:iam::aws:policy/service-role/AmazonEFSCSIDriverPolicy'
-        - !Ref AWSIAMManagedPolicyCloudProviderControlPlane
         - !Ref AWSIAMManagedPolicyCloudProviderNodes
         - !Ref AWSIAMManagedPolicyControllers
-        - !Ref AWSIAMManagedPolicyControllersEKS
-
   PF9EMPPolicy:
     Properties:
       Description: EMP PF9 Policy
@@ -432,6 +257,7 @@ Resources:
             - '*'
           Effect: Allow
         - Action:
+          # pricing data is mostly public, it's needed for cost calculations
           - pricing:GetProducts
           Resource:
             - '*'
@@ -450,7 +276,7 @@ Resources:
           Effect: Allow
         - Action:
           - 'iam:PassRole'
-          Resource: 
+          Resource:
           - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${EKSRole}'
           Effect: Allow
         - Action:
@@ -487,37 +313,37 @@ Resources:
           - ec2:DescribeVolumesModifications
           - ec2:DescribeVpcClassicLink
           - ec2:DescribeVpcClassicLinkDnsSupport
-          - ec2:ImportKeyPair
           - ec2:ModifySecurityGroupRules
           - ec2:ReplaceRouteTableAssociation
           - ec2:RevokeSecurityGroupEgress
           - ec2:UpdateSecurityGroupRuleDescriptionsEgress
           - ec2:UpdateSecurityGroupRuleDescriptionsIngress
+          # needed by kubevirt to migrate ebs volumes attached to pods, resource here is * because we can't dictate the
+          # attributes of ebs attached
+          - ec2:AttachVolume
+          - ec2:DetachVolume
+          - ec2:DescribeVolumes
+          # needed by emp-server to populate the data on the UI. We can't dictate what resources customer will use therefore resource *
+          # the customer has full freedom, and we encourage to restrict the access according to their use case.
+          - ec2:DescribeRouteTables
+          - ec2:DescribeVpcs
+          - ec2:DescribeRegions
+          - ec2:DescribeSecurityGroups
+          - ec2:DescribeSubnets
+          - ec2:DescribeKeyPairs
+          - ec2:DescribeAvailabilityZones
+          # needed by emp-server to populate the data on the UI. we may be able to restrict DescribeInstanceTypes to only metal instances
+          # and DescribeImages to the AMIs we need(consult operations)
+          - ec2:DescribeInstanceTypes
+          - ec2:DescribeImages
           Resource:
             - '*'
           Effect: Allow
         - Action:
-          - ecr:DescribeImageScanFindings
-          - ecr:DescribeImages
-          - ecr:GetLifecyclePolicy
-          - ecr:GetLifecyclePolicyPreview
-          - ecr:ListTagsForResource
-          Resource:
-            - '*'
-          Effect: Allow
-        - Action:
-          - eks:AccessKubernetesApi
-          - eks:DescribeUpdate
-          - eks:ListFargateProfiles
-          - eks:ListNodegroups
-          - eks:ListTagsForResource
-          - eks:ListUpdates
-          Resource:
-            - '*'
-          Effect: Allow
-        - Action:
-          - elasticloadbalancing:DescribeInstanceHealth
-          - elasticloadbalancing:DescribeTargetGroupAttributes
+          # we don't have control over the eks cluster to which evm attaches, so we need DescribeCluster on * to get
+          # apiserver endpoint and CA data. We need ListClusters on * to display the choices on the UI
+          - eks:DescribeCluster
+          - eks:ListClusters
           Resource:
             - '*'
           Effect: Allow
@@ -533,7 +359,6 @@ Resources:
       InstanceProfileName: !Ref RoleName
       Roles:
         - !Ref EKSRole
-
 Outputs:
   RoleArnOutput:
     Description: The ARN of the IAM role created.
