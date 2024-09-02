@@ -33,17 +33,20 @@ Resources:
             Resource:
               - '*'
           - Action:
+              # capa creates cloud init secrets, this is needed.
               - secretsmanager:DeleteSecret
               - secretsmanager:GetSecretValue
             Effect: Allow
             Resource:
               - arn:*:secretsmanager:*:*:secret:aws.cluster.x-k8s.io/*
           - Action:
+              # they are related to some heartbeat sent by systems manager see: https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-messageAPIs.html
               - ssm:UpdateInstanceInformation
               - ssmmessages:CreateControlChannel
               - ssmmessages:CreateDataChannel
               - ssmmessages:OpenControlChannel
               - ssmmessages:OpenDataChannel
+              # discuss why this is needed
               - s3:GetEncryptionConfiguration
             Effect: Allow
             Resource:
@@ -150,9 +153,9 @@ Resources:
               - elasticloadbalancing:DescribeTargetHealth
               - elasticloadbalancing:RegisterTargets
               - elasticloadbalancing:DeleteListener
-              # check with team if autoscaling:<action> is needed
-              - autoscaling:DescribeAutoScalingGroups
-              - autoscaling:DescribeInstanceRefreshes
+              # commenting out capa actions, reason: we don't use machinepools, and just scale the md
+#              - autoscaling:DescribeAutoScalingGroups
+#              - autoscaling:DescribeInstanceRefreshes
               - ec2:CreateLaunchTemplate
               - ec2:CreateLaunchTemplateVersion
               - ec2:DescribeLaunchTemplates
@@ -164,25 +167,25 @@ Resources:
             Effect: Allow
             Resource:
               - '*'
-          - Action:
-              # check with team if autoscaling:<action> is needed
-              - autoscaling:CreateAutoScalingGroup
-              - autoscaling:UpdateAutoScalingGroup
-              - autoscaling:CreateOrUpdateTags
-              - autoscaling:StartInstanceRefresh
-              - autoscaling:DeleteAutoScalingGroup
-              - autoscaling:DeleteTags
-            Effect: Allow
-            Resource:
-              - arn:*:autoscaling:*:*:autoScalingGroup:*:autoScalingGroupName/*
-          - Action:
-              - iam:CreateServiceLinkedRole
-            Condition:
-              StringLike:
-                iam:AWSServiceName: autoscaling.amazonaws.com
-            Effect: Allow
-            Resource:
-              - arn:*:iam::*:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling
+#          - Action:
+#              # # commenting out capa actions, reason: we don't use machinepools, and just scale the md
+#              - autoscaling:CreateAutoScalingGroup
+#              - autoscaling:UpdateAutoScalingGroup
+#              - autoscaling:CreateOrUpdateTags
+#              - autoscaling:StartInstanceRefresh
+#              - autoscaling:DeleteAutoScalingGroup
+#              - autoscaling:DeleteTags
+#            Effect: Allow
+#            Resource:
+#              - arn:*:autoscaling:*:*:autoScalingGroup:*:autoScalingGroupName/*
+#          - Action:
+#              - iam:CreateServiceLinkedRole
+#            Condition:
+#              StringLike:
+#                iam:AWSServiceName: autoscaling.amazonaws.com
+#            Effect: Allow
+#            Resource:
+#              - arn:*:iam::*:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling
           - Action:
               - iam:CreateServiceLinkedRole
             Condition:
@@ -344,8 +347,8 @@ Resources:
               - ec2:DescribeSubnets
               - ec2:DescribeKeyPairs
               - ec2:DescribeAvailabilityZones
-              # needed by emp-server to populate the data on the UI. we may be able to restrict DescribeInstanceTypes to only metal instances
-              # and DescribeImages to the AMIs we need(consult operations) https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeImages.html
+              # needed by emp-server to populate the data on the UI. we may be able to restrict
+              # DescribeImages to the AMIs we need(consult operations) https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeImages.html
               - ec2:DescribeImages
             Resource:
               - '*'
