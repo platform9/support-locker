@@ -33,7 +33,7 @@ Resources:
             Resource:
               - '*'
           - Action:
-              # capa creates cloud init secrets, this is needed.
+              # capa creates encrypted cloud init secrets, this is needed.
               - secretsmanager:DeleteSecret
               - secretsmanager:GetSecretValue
             Effect: Allow
@@ -232,7 +232,6 @@ Resources:
                 - 'arn:aws:iam::617350239289:root'
             Action: 'sts:AssumeRole'
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/AmazonEKSClusterPolicy'
         - 'arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy'
         - 'arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy'
         - 'arn:aws:iam::aws:policy/service-role/AmazonEFSCSIDriverPolicy'
