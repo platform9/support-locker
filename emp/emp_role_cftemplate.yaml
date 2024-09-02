@@ -293,25 +293,20 @@ Resources:
               - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${EKSRole}'
             Effect: Allow
           - Action:
-              - elasticfilesystem:Backup
-              - elasticfilesystem:CreateAccessPoint
+              # these are api calls our controllers make, we should be able to restrict these once we have tagging.
+              # the tagging permissions are left as-is for that purpose
               - elasticfilesystem:CreateFileSystem
               - elasticfilesystem:CreateMountTarget
               - elasticfilesystem:CreateTags
-              - elasticfilesystem:DeleteAccessPoint
               - elasticfilesystem:DeleteFileSystem
               - elasticfilesystem:DeleteMountTarget
               - elasticfilesystem:DeleteTags
-              - elasticfilesystem:DescribeAccessPoints
               - elasticfilesystem:DescribeFileSystems
-              - elasticfilesystem:DescribeMountTargetSecurityGroups
               - elasticfilesystem:DescribeMountTargets
               - elasticfilesystem:DescribeTags
               - elasticfilesystem:ListTagsForResource
-              - elasticfilesystem:ModifyMountTargetSecurityGroups
               - elasticfilesystem:TagResource
               - elasticfilesystem:UntagResource
-              - elasticfilesystem:UpdateFileSystem
             Resource:
               - '*'
             Effect: Allow
