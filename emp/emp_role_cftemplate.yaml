@@ -162,7 +162,8 @@ Resources:
 #              - ec2:DescribeLaunchTemplateVersions
 #              - ec2:DeleteLaunchTemplate
 #              - ec2:DeleteLaunchTemplateVersions
-              - ec2:DescribeKeyPairs
+              # commenting out capa action, accounted for below
+#              - ec2:DescribeKeyPairs
               - ec2:ModifyInstanceMetadataOptions
             Effect: Allow
             Resource:
@@ -276,7 +277,6 @@ Resources:
               - '*'
             Effect: Allow
           - Action:
-              - iam:GetInstanceProfile
               - iam:GetRole
               - iam:GetRolePolicy
               - iam:ListAttachedRolePolicies
@@ -311,21 +311,8 @@ Resources:
               - '*'
             Effect: Allow
           - Action:
+              # required by baremetalpool controller check ConfigureSGRules
               - ec2:AuthorizeSecurityGroupEgress
-              - ec2:DeleteNetworkInterface
-              - ec2:DescribeInstanceAttribute
-              - ec2:DescribeInstanceStatus
-              - ec2:DescribeNetworkAcls
-              - ec2:DescribeSecurityGroupRules
-              - ec2:DescribeSpotInstanceRequests
-              - ec2:DescribeVolumesModifications
-              - ec2:DescribeVpcClassicLink
-              - ec2:DescribeVpcClassicLinkDnsSupport
-              - ec2:ModifySecurityGroupRules
-              - ec2:ReplaceRouteTableAssociation
-              - ec2:RevokeSecurityGroupEgress
-              - ec2:UpdateSecurityGroupRuleDescriptionsEgress
-              - ec2:UpdateSecurityGroupRuleDescriptionsIngress
               # needed by kubevirt to migrate ebs volumes attached to pods, resource here is * because we can't dictate the
               # attributes of ebs attached. the customer has full freedom to restrict access to limited resources, and we
               # encourage to do it according to their use case.
