@@ -21,7 +21,8 @@ Resources:
               - ec2:DescribeTags
               - ec2:DescribeNetworkInterfaces
 #              - ec2:DescribeInstanceTypes commenting, not deleting capa actions. This is accounted for below
-              # check with team if ecr:<action is needed>
+              # needed to pull an image from ecr. EKS bootstrap script adds an entry for the sandbox image
+              # with an ecr URL in containerd config, so these are needed
               - ecr:GetAuthorizationToken
               - ecr:BatchCheckLayerAvailability
               - ecr:GetDownloadUrlForLayer
