@@ -54,6 +54,7 @@ Resources:
               - '*'
         Version: 2012-10-17
     Type: AWS::IAM::ManagedPolicy
+    # can't tag managed policy yet: https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/819
   AWSIAMManagedPolicyControllers:
     Properties:
       Description: For the Kubernetes Cluster API Provider AWS Controllers
@@ -223,6 +224,11 @@ Resources:
     Type: 'AWS::IAM::Role'
     Properties:
       RoleName: !Ref RoleName
+      Tags:
+        - Key: 'emp:cloudformation'
+          Value: !Ref AWS::StackName
+        - Key: 'emp.pf9.io'
+          Value: 'owned'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
