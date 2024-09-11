@@ -1,0 +1,389 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  IAMUserName:
+    Type: String
+    Description: Name of the user.
+    Default: 'pf9user'
+
+Resources:
+  # CAPA Policies
+  AWSIAMInstanceProfileNodes:
+    Properties:
+      InstanceProfileName: !Sub "${IAMUserName}-nodes.cluster-api-provider-aws.sigs.k8s.io"
+      Roles:
+        - Ref: AWSIAMRoleNodes
+    Type: AWS::IAM::InstanceProfile
+  AWSIAMManagedPolicyCloudProviderNodes:
+    Properties:
+      Description: For the Kubernetes Cloud Provider AWS nodes
+      ManagedPolicyName: !Sub "${IAMUserName}-nodes.cluster-api-provider-aws.sigs.k8s.io"
+      PolicyDocument:
+        Statement:
+          - Action:
+              - ec2:AssignIpv6Addresses
+              - ec2:DescribeInstances
+              - ec2:DescribeRegions
+              - ec2:CreateTags
+              - ec2:DescribeTags
+              - ec2:DescribeNetworkInterfaces
+#              - ec2:DescribeInstanceTypes commenting, not deleting capa actions. This is accounted for below
+              # needed to pull an image from ecr. EKS bootstrap script adds an entry for the sandbox image
+              # with an ecr URL in containerd config, so these are needed
+              - ecr:GetAuthorizationToken
+              - ecr:BatchCheckLayerAvailability
+              - ecr:GetDownloadUrlForLayer
+              - ecr:GetRepositoryPolicy
+              - ecr:DescribeRepositories
+              - ecr:ListImages
+              - ecr:BatchGetImage
+            Effect: Allow
+            Resource:
+              - '*'
+          - Action:
+              # capa creates encrypted cloud init secrets, this is needed.
+              - secretsmanager:DeleteSecret
+              - secretsmanager:GetSecretValue
+            Effect: Allow
+            Resource:
+              - arn:*:secretsmanager:*:*:secret:aws.cluster.x-k8s.io/*
+          - Action:
+              # they are related to some heartbeat sent by systems manager see: https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-messageAPIs.html
+              - ssm:UpdateInstanceInformation
+              - ssmmessages:CreateControlChannel
+              - ssmmessages:CreateDataChannel
+              - ssmmessages:OpenControlChannel
+              - ssmmessages:OpenDataChannel
+              # discuss why this is needed
+              - s3:GetEncryptionConfiguration
+            Effect: Allow
+            Resource:
+              - '*'
+        Version: 2012-10-17
+      Roles:
+        - Ref: AWSIAMRoleNodes
+    Type: AWS::IAM::ManagedPolicy
+    # can't tag managed policy yet: https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/819
+  AWSIAMManagedPolicyControllers:
+    Properties:
+      Description: For the Kubernetes Cluster API Provider AWS Controllers
+      ManagedPolicyName: !Sub "${IAMUserName}-controllers.cluster-api-provider-aws.sigs.k8s.io"
+      PolicyDocument:
+        Statement:
+          - Action:
+              - ec2:DescribeIpamPools
+              - ec2:AllocateIpamPoolCidr
+              - ec2:AttachNetworkInterface
+              - ec2:DetachNetworkInterface
+              - ec2:AllocateAddress
+              - ec2:AssignIpv6Addresses
+              - ec2:AssignPrivateIpAddresses
+              - ec2:UnassignPrivateIpAddresses
+              - ec2:AssociateRouteTable
+              - ec2:AssociateVpcCidrBlock
+              - ec2:AttachInternetGateway
+              - ec2:AuthorizeSecurityGroupIngress
+              - ec2:CreateCarrierGateway
+              - ec2:CreateInternetGateway
+              - ec2:CreateEgressOnlyInternetGateway
+              - ec2:CreateNatGateway
+              - ec2:CreateNetworkInterface
+              - ec2:CreateRoute
+              - ec2:CreateRouteTable
+              - ec2:CreateSecurityGroup
+              - ec2:CreateSubnet
+              - ec2:CreateTags
+              - ec2:CreateVpc
+              - ec2:CreateVpcEndpoint
+              - ec2:DisassociateVpcCidrBlock
+              - ec2:ModifyVpcAttribute
+              - ec2:ModifyVpcEndpoint
+              - ec2:DeleteCarrierGateway
+              - ec2:DeleteInternetGateway
+              - ec2:DeleteEgressOnlyInternetGateway
+              - ec2:DeleteNatGateway
+              - ec2:DeleteRouteTable
+              - ec2:ReplaceRoute
+              - ec2:DeleteSecurityGroup
+              - ec2:DeleteSubnet
+              - ec2:DeleteTags
+              - ec2:DeleteVpc
+              - ec2:DeleteVpcEndpoints
+              - ec2:DescribeAccountAttributes
+              - ec2:DescribeAddresses
+              - ec2:DescribeAvailabilityZones
+              - ec2:DescribeCarrierGateways
+              - ec2:DescribeInstances
+#              - ec2:DescribeInstanceTypes commenting out capa actions, accounted for below
+              - ec2:DescribeInternetGateways
+              - ec2:DescribeEgressOnlyInternetGateways
+#              - ec2:DescribeInstanceTypes commenting out capa actions, accounted for below
+#              - ec2:DescribeImages commenting out capa actions, accounted for below
+              - ec2:DescribeNatGateways
+              - ec2:DescribeNetworkInterfaces
+              - ec2:DescribeNetworkInterfaceAttribute
+              - ec2:DescribeRouteTables
+              - ec2:DescribeSecurityGroups
+              - ec2:DescribeSubnets
+              - ec2:DescribeVpcs
+              - ec2:DescribeDhcpOptions
+              - ec2:DescribeVpcAttribute
+              - ec2:DescribeVpcEndpoints
+              - ec2:DescribeVolumes
+              - ec2:DescribeTags
+              - ec2:DetachInternetGateway
+              - ec2:DisassociateRouteTable
+              - ec2:DisassociateAddress
+              - ec2:ModifyInstanceAttribute
+              - ec2:ModifyNetworkInterfaceAttribute
+              - ec2:ModifySubnetAttribute
+              - ec2:ReleaseAddress
+              - ec2:RevokeSecurityGroupIngress
+              - ec2:RunInstances
+              - ec2:TerminateInstances
+              - tag:GetResources
+              - elasticloadbalancing:AddTags
+              - elasticloadbalancing:CreateLoadBalancer
+              - elasticloadbalancing:ConfigureHealthCheck
+              - elasticloadbalancing:DeleteLoadBalancer
+              - elasticloadbalancing:DeleteTargetGroup
+              - elasticloadbalancing:DescribeLoadBalancers
+              - elasticloadbalancing:DescribeLoadBalancerAttributes
+              - elasticloadbalancing:DescribeTargetGroups
+              - elasticloadbalancing:ApplySecurityGroupsToLoadBalancer
+              - elasticloadbalancing:DescribeTags
+              - elasticloadbalancing:ModifyLoadBalancerAttributes
+              - elasticloadbalancing:RegisterInstancesWithLoadBalancer
+              - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+              - elasticloadbalancing:RemoveTags
+              - elasticloadbalancing:SetSubnets
+              - elasticloadbalancing:ModifyTargetGroupAttributes
+              - elasticloadbalancing:CreateTargetGroup
+              - elasticloadbalancing:DescribeListeners
+              - elasticloadbalancing:CreateListener
+              - elasticloadbalancing:DescribeTargetHealth
+              - elasticloadbalancing:RegisterTargets
+              - elasticloadbalancing:DeleteListener
+# commenting out capa actions, reason: we don't use machinepools, and just scale the md
+#              - autoscaling:DescribeAutoScalingGroups
+#              - autoscaling:DescribeInstanceRefreshes
+#              - ec2:CreateLaunchTemplate
+#              - ec2:CreateLaunchTemplateVersion
+#              - ec2:DescribeLaunchTemplates
+#              - ec2:DescribeLaunchTemplateVersions
+#              - ec2:DeleteLaunchTemplate
+#              - ec2:DeleteLaunchTemplateVersions
+# commenting out capa action, accounted for below
+#              - ec2:DescribeKeyPairs
+              - ec2:ModifyInstanceMetadataOptions
+            Effect: Allow
+            Resource:
+              - '*'
+#          - Action:
+# commenting out capa actions, reason: we don't use machinepools, and just scale the md
+#              - autoscaling:CreateAutoScalingGroup
+#              - autoscaling:UpdateAutoScalingGroup
+#              - autoscaling:CreateOrUpdateTags
+#              - autoscaling:StartInstanceRefresh
+#              - autoscaling:DeleteAutoScalingGroup
+#              - autoscaling:DeleteTags
+#            Effect: Allow
+#            Resource:
+#              - arn:*:autoscaling:*:*:autoScalingGroup:*:autoScalingGroupName/*
+#          - Action:
+#              - iam:CreateServiceLinkedRole
+#            Condition:
+#              StringLike:
+#                iam:AWSServiceName: autoscaling.amazonaws.com
+#            Effect: Allow
+#            Resource:
+#              - arn:*:iam::*:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling
+          - Action:
+              - iam:CreateServiceLinkedRole
+            Condition:
+              StringLike:
+                iam:AWSServiceName: elasticloadbalancing.amazonaws.com
+            Effect: Allow
+            Resource:
+              - arn:*:iam::*:role/aws-service-role/elasticloadbalancing.amazonaws.com/AWSServiceRoleForElasticLoadBalancing
+          - Action:
+              - iam:CreateServiceLinkedRole
+            Condition:
+              StringLike:
+                iam:AWSServiceName: spot.amazonaws.com
+            Effect: Allow
+            Resource:
+              - arn:*:iam::*:role/aws-service-role/spot.amazonaws.com/AWSServiceRoleForEC2Spot
+          - Action:
+              - iam:PassRole
+            Effect: Allow
+            Resource:
+              - arn:*:iam::*:role/*.cluster-api-provider-aws.sigs.k8s.io
+          - Action:
+              - secretsmanager:CreateSecret
+              - secretsmanager:DeleteSecret
+              - secretsmanager:TagResource
+            Effect: Allow
+            Resource:
+              - arn:*:secretsmanager:*:*:secret:aws.cluster.x-k8s.io/*
+        Version: 2012-10-17
+    Type: AWS::IAM::ManagedPolicy
+  AWSIAMRoleNodes:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+        Version: 2012-10-17
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+      RoleName: !Sub "${IAMUserName}-nodes.cluster-api-provider-aws.sigs.k8s.io"
+    Type: AWS::IAM::Role
+  # PF9 Role and Policies
+  PF9User:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Ref IAMUserName
+      Tags:
+        - Key: 'emp:cloudformation'
+          Value: !Ref AWS::StackName
+        - Key: 'emp.pf9.io'
+          Value: 'owned'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy'
+        - 'arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy'
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEFSCSIDriverPolicy'
+        - !Ref AWSIAMManagedPolicyCloudProviderNodes
+        - !Ref AWSIAMManagedPolicyControllers
+
+  PF9EMPPolicy:
+    DependsOn: PF9User
+    Properties:
+      Description: EMP PF9 Policy
+      ManagedPolicyName: !Sub "${IAMUserName}-emp-policy"
+      PolicyDocument:
+        Statement:
+          - Action:
+              - ec2:CreateNetworkInterfacePermission
+            Effect: Allow
+            Resource:
+              - '*'
+            Condition:
+              StringEquals:
+                ec2:ResourceTag/eks:eni:owner: eks-vpc-resource-controller
+          - Action:
+              # permissions needed for vpcpeering. This resource is created by emp-controllers, we should be able to tag
+              # it and reduce the scope of access
+              - ec2:AcceptVpcPeeringConnection
+              - ec2:CreateVpcPeeringConnection
+              - ec2:DeleteVpcPeeringConnection
+              - ec2:DescribeVpcPeeringConnections
+              # these modify a route table, of a subnet. It's not possible to constrain the access from our side
+              # this is because, we use the VPCs already created in the customer's environment by the customer.
+              # the customer is free to add restrictions according to their use case. ec2:DescribeRouteTables, is also
+              # needed by emp-server to fill in the data for emp-ui, so the restrictions here must match the one defined
+              # below.
+              - ec2:DescribeRouteTables
+              - ec2:DeleteRoute
+              - ec2:CreateRoute
+            Resource:
+              - '*'
+            Effect: Allow
+          - Action:
+              # pricing data is mostly public, it's needed for cost calculations
+              - pricing:GetProducts
+            Resource:
+              - '*'
+            Effect: Allow
+          - Action:
+              - iam:GetUser
+              - iam:GetUserPolicy
+              - iam:ListAttachedUserPolicies
+              - iam:ListUserPolicies
+              - iam:GetPolicy
+              - iam:GetPolicyVersion
+              - iam:SimulateCustomPolicy
+            Resource:
+              - '*'
+            Effect: Allow
+          - Action:
+              # these are api calls our controllers make, we should be able to restrict these once we have tagging.
+              # the tagging permissions are left as-is for that purpose
+              - elasticfilesystem:CreateFileSystem
+              - elasticfilesystem:CreateMountTarget
+              - elasticfilesystem:CreateTags
+              - elasticfilesystem:DeleteFileSystem
+              - elasticfilesystem:DeleteMountTarget
+              - elasticfilesystem:DeleteTags
+              - elasticfilesystem:DescribeFileSystems
+              - elasticfilesystem:DescribeMountTargets
+              - elasticfilesystem:DescribeTags
+              - elasticfilesystem:ListTagsForResource
+              - elasticfilesystem:TagResource
+              - elasticfilesystem:UntagResource
+            Resource:
+              - '*'
+            Effect: Allow
+          - Action:
+              # required by baremetalpool controller check ConfigureSGRules
+              - ec2:AuthorizeSecurityGroupEgress
+              # needed by kubevirt to migrate ebs volumes attached to pods, resource here is * because we can't dictate the
+              # attributes of ebs attached. the customer has full freedom to restrict access to limited resources, and we
+              # encourage to do it according to their use case.
+              - ec2:AttachVolume
+              - ec2:DetachVolume
+              - ec2:DescribeVolumes
+              # needed by emp-server to populate the data on the UI. We can't dictate what resources customer will use therefore resource *
+              # the customer has full freedom to restrict access to limited resources, and we encourage to do it according to their use case.
+              - ec2:DescribeRouteTables
+              - ec2:DescribeVpcs
+              - ec2:DescribeRegions
+              - ec2:DescribeSecurityGroups
+              - ec2:DescribeSubnets
+              - ec2:DescribeKeyPairs
+              - ec2:DescribeAvailabilityZones
+              # needed by emp-server to populate the data on the UI. we may be able to restrict
+              # DescribeImages to the AMIs we need(consult operations) https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeImages.html
+              - ec2:DescribeImages
+            Resource:
+              - '*'
+            Effect: Allow
+          - Action:
+              - ec2:DescribeInstanceTypes
+            Resource:
+              - '*'
+            Effect: Allow
+            Condition:
+              StringLike:
+                ec2:InstanceType: '*.metal'
+          - Action:
+              # we don't have control over the eks cluster to which evm attaches, so we need DescribeCluster on * to get
+              # apiserver endpoint and CA data. We need ListClusters on * to display the choices on the UI
+              - eks:DescribeCluster
+              - eks:ListClusters
+            Resource:
+              - '*'
+            Effect: Allow
+        Version: 2012-10-17
+      Users:
+        - Ref: IAMUserName
+    Type: AWS::IAM::ManagedPolicy
+
+  PF9UserSecrets:
+    Type: AWS::IAM::AccessKey
+    DependsOn: PF9User
+    Properties:
+      UserName: !Ref IAMUserName
+
+Outputs:
+  AccessKeyId:
+    Description: "Access Key ID for the IAM user"
+    Value: !Ref PF9UserSecrets
+
+  SecretAccessKey:
+    Description: "Secret Access Key for the IAM user"
+    Value: !GetAtt PF9UserSecrets.SecretAccessKey
