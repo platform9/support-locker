@@ -41,7 +41,7 @@ Resources:
             Resource:
               - arn:*:secretsmanager:*:*:secret:aws.cluster.x-k8s.io/*
           - Action:
-              # they are related to some heartbeat sent by systems manager see: https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-messageAPIs.html
+              # they are related to heartbeat sent by systems manager see: https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-messageAPIs.html
               - ssm:UpdateInstanceInformation
               - ssmmessages:CreateControlChannel
               - ssmmessages:CreateDataChannel
