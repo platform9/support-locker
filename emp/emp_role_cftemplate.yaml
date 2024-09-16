@@ -327,6 +327,8 @@ Resources:
               - ec2:AttachVolume
               - ec2:DetachVolume
               - ec2:DescribeVolumes
+              # needed by kubevirt during migrations
+              - ec2:DescribeInstanceStatus
               # needed by emp-server to populate the data on the UI. We can't dictate what resources customer will use therefore resource *
               # the customer has full freedom to restrict access to limited resources, and we encourage to do it according to their use case.
               - ec2:DescribeRouteTables
