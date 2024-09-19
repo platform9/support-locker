@@ -13,6 +13,9 @@ spec:
     kind: EKSCluster 
     name: emp-eks-cluster
   empName: emp-test
+  # Storage type can be efs|ebs
+  storage:
+    type: efs  
   
   # EMP Resources overcommitment multipler
   overcommitMultipler:
