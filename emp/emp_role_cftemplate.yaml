@@ -237,7 +237,7 @@ Resources:
               Service:
                 - 'ec2.amazonaws.com'
               AWS:
-                - 'arn:aws:iam::617350239289:root'
+                - 'arn:aws:iam::971863049970:root'
             Action: 'sts:AssumeRole'
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy'
@@ -305,10 +305,8 @@ Resources:
               # the tagging permissions are left as-is for that purpose
               - elasticfilesystem:CreateFileSystem
               - elasticfilesystem:CreateMountTarget
-              - elasticfilesystem:CreateTags
               - elasticfilesystem:DeleteFileSystem
               - elasticfilesystem:DeleteMountTarget
-              - elasticfilesystem:DeleteTags
               - elasticfilesystem:DescribeFileSystems
               - elasticfilesystem:DescribeMountTargets
               - elasticfilesystem:DescribeTags

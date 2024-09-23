@@ -316,10 +316,8 @@ Resources:
               # the tagging permissions are left as-is for that purpose
               - elasticfilesystem:CreateFileSystem
               - elasticfilesystem:CreateMountTarget
-              - elasticfilesystem:CreateTags
               - elasticfilesystem:DeleteFileSystem
               - elasticfilesystem:DeleteMountTarget
-              - elasticfilesystem:DeleteTags
               - elasticfilesystem:DescribeFileSystems
               - elasticfilesystem:DescribeMountTargets
               - elasticfilesystem:DescribeTags
