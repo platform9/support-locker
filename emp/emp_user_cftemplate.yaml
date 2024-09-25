@@ -312,23 +312,43 @@ Resources:
               - '*'
             Effect: Allow
           - Action:
-              # these are api calls our controllers make, we should be able to restrict these once we have tagging.
-              # the tagging permissions are left as-is for that purpose
-              - elasticfilesystem:CreateFileSystem
-              - elasticfilesystem:CreateMountTarget
-              - elasticfilesystem:CreateTags
-              - elasticfilesystem:DeleteFileSystem
-              - elasticfilesystem:DeleteMountTarget
-              - elasticfilesystem:DeleteTags
-              - elasticfilesystem:DescribeFileSystems
-              - elasticfilesystem:DescribeMountTargets
+              # read-only
               - elasticfilesystem:DescribeTags
               - elasticfilesystem:ListTagsForResource
-              - elasticfilesystem:TagResource
-              - elasticfilesystem:UntagResource
             Resource:
               - '*'
             Effect: Allow
+          - Action:
+              - elasticfilesystem:CreateFileSystem
+            Resource: '*'
+            Effect: Allow
+            Condition:
+              StringEquals:
+                aws:RequestTag/emp.pf9.io: owned
+              StringLike:
+                aws:RequestTag/emp.pf9.io/baremetalpool: '*'
+                aws:RequestTag/emp.pf9.io/namespace: '*'
+          - Action:
+              - elasticfilesystem:DescribeFileSystems
+              - elasticfilesystem:CreateMountTarget
+              - elasticfilesystem:DeleteMountTarget
+              - elasticfilesystem:DeleteFileSystem
+              - elasticfilesystem:DescribeMountTargets
+            Resource: '*'
+            Effect: Allow
+            Condition:
+              StringEquals:
+                aws:ResourceTag/emp.pf9.io: owned
+              StringLike:
+                aws:ResourceTag/emp.pf9.io/namespace: '*'
+                aws:ResourceTag/emp.pf9.io/baremetalpool: '*'
+          - Action:
+              - elasticfilesystem:TagResource
+            Effect: Allow
+            Resource: '*'
+            Condition:
+              StringEquals:
+                elasticfilesystem:CreateAction: 'CreateFileSystem'
           - Action:
               # required by baremetalpool controller check ConfigureSGRules
               - ec2:AuthorizeSecurityGroupEgress
