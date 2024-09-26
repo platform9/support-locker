@@ -205,11 +205,12 @@ Resources:
             Effect: Allow
             Resource:
               - arn:*:iam::*:role/aws-service-role/spot.amazonaws.com/AWSServiceRoleForEC2Spot
-          - Action:
-              - iam:PassRole
-            Effect: Allow
-            Resource:
-              - arn:*:iam::*:role/*.cluster-api-provider-aws.sigs.k8s.io
+# this isn't needed, we pass the role we create instead
+#          - Action:
+#              - iam:PassRole
+#            Effect: Allow
+#            Resource:
+#              - arn:*:iam::*:role/*.cluster-api-provider-aws.sigs.k8s.io
           - Action:
               - secretsmanager:CreateSecret
               - secretsmanager:DeleteSecret
@@ -285,16 +286,25 @@ Resources:
               - '*'
             Effect: Allow
           - Action:
+              - iam:GetPolicy
+              - iam:GetPolicyVersion
+            Resource:
+              - 'arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy'
+              - 'arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy'
+              - 'arn:aws:iam::aws:policy/service-role/AmazonEFSCSIDriverPolicy'
+              - 'arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy'
+              - !Ref AWSIAMManagedPolicyCloudProviderNodes
+              - !Ref AWSIAMManagedPolicyControllers
+              - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/${RoleName}-emp-policy'
+            Effect: Allow
+          - Action:
               - iam:GetRole
               - iam:GetRolePolicy
               - iam:ListAttachedRolePolicies
               - iam:ListRolePolicies
-              - iam:GetPolicy
-              - iam:GetPolicyVersion
-              - iam:SimulateCustomPolicy
-            Resource:
-              - '*'
             Effect: Allow
+            Resource:
+              - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${EKSRole}'
           - Action:
               - iam:PassRole
             Resource:
