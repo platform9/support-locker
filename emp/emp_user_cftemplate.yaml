@@ -305,11 +305,20 @@ Resources:
               - iam:GetUserPolicy
               - iam:ListAttachedUserPolicies
               - iam:ListUserPolicies
+            Resource:
+              - !Sub 'arn:aws:iam::${AWS::AccountId}:user/${IAMUserName}'
+            Effect: Allow
+          - Action:
               - iam:GetPolicy
               - iam:GetPolicyVersion
-              - iam:SimulateCustomPolicy
             Resource:
-              - '*'
+              - 'arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy'
+              - 'arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy'
+              - 'arn:aws:iam::aws:policy/service-role/AmazonEFSCSIDriverPolicy'
+              - 'arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy'
+              - !Ref AWSIAMManagedPolicyCloudProviderNodes
+              - !Ref AWSIAMManagedPolicyControllers
+              - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/${IAMUserName}-emp-policy'
             Effect: Allow
           - Action:
               # read-only
