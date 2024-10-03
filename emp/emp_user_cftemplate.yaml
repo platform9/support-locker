@@ -334,9 +334,6 @@ Resources:
             Condition:
               StringEquals:
                 aws:RequestTag/emp.pf9.io: owned
-              StringLike:
-                aws:RequestTag/emp.pf9.io/ns/org-*/bmtpool/*: owned
-                aws:RequestTag/emp.pf9.io/ns/org-*: owned
           - Action:
               - elasticfilesystem:DescribeFileSystems
               - elasticfilesystem:CreateMountTarget
@@ -348,9 +345,6 @@ Resources:
             Condition:
               StringEquals:
                 aws:ResourceTag/emp.pf9.io: owned
-              StringLike:
-                aws:ResourceTag/emp.pf9.io/ns/org-*: owned
-                aws:ResourceTag/emp.pf9.io/ns/org-*/bmtpool/*: owned
           - Action:
               - elasticfilesystem:TagResource
             Effect: Allow

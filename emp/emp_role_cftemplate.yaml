@@ -42,6 +42,7 @@ Resources:
               - arn:*:secretsmanager:*:*:secret:aws.cluster.x-k8s.io/*
           - Action:
               # they are related to heartbeat sent by systems manager see: https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-messageAPIs.html
+              # these permissions are needed by the ec2 instance itself. AWS docs don't disclose a resource type for this.
               - ssm:UpdateInstanceInformation
               - ssmmessages:CreateControlChannel
               - ssmmessages:CreateDataChannel
@@ -324,9 +325,6 @@ Resources:
             Condition:
               StringEquals:
                 aws:RequestTag/emp.pf9.io: owned
-              StringLike:
-                aws:RequestTag/emp.pf9.io/ns/org-*/bmtpool/*: owned
-                aws:RequestTag/emp.pf9.io/ns/org-*: owned
           - Action:
               - elasticfilesystem:DescribeFileSystems
               - elasticfilesystem:CreateMountTarget
@@ -338,9 +336,6 @@ Resources:
             Condition:
               StringEquals:
                 aws:ResourceTag/emp.pf9.io: owned
-              StringLike:
-                aws:ResourceTag/emp.pf9.io/ns/org-*: owned
-                aws:ResourceTag/emp.pf9.io/ns/org-*/bmtpool/*: owned
           - Action:
               - elasticfilesystem:TagResource
             Effect: Allow
