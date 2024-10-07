@@ -220,6 +220,7 @@ Resources:
             Effect: Allow
             Resource:
               - arn:*:iam::*:role/*.cluster-api-provider-aws.sigs.k8s.io
+          # capa controllers delete the secret once it's no longer needed. This is also needed.
           - Action:
               - secretsmanager:CreateSecret
               - secretsmanager:DeleteSecret
@@ -302,6 +303,8 @@ Resources:
             Resource:
               - '*'
             Effect: Allow
+          # read-only access to IAM resources attached to the role we create. This is needed for an upcoming rework
+          # where we check if the IAM role or the user has sufficient permissions or not.
           - Action:
               - iam:GetUser
               - iam:GetUserPolicy
