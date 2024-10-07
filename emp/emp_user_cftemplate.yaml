@@ -47,14 +47,16 @@ Resources:
             Resource:
               - arn:*:secretsmanager:*:*:secret:aws.cluster.x-k8s.io/*
           - Action:
-              # they are related to some heartbeat sent by systems manager see: https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-messageAPIs.html
+              # they are related to heartbeat sent by systems manager see: https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-messageAPIs.html
+              # these permissions are needed by the ec2 instance itself. AWS docs don't disclose a resource type for this.
+              # additionally, these permissions allow us to get a shell to the baremetal instance without ssh using AWS Systems manager.
+              # This is a useful diagnostic tool in case of an emergency.
               - ssm:UpdateInstanceInformation
               - ssmmessages:CreateControlChannel
               - ssmmessages:CreateDataChannel
               - ssmmessages:OpenControlChannel
               - ssmmessages:OpenDataChannel
-              # discuss why this is needed
-              - s3:GetEncryptionConfiguration
+#              - s3:GetEncryptionConfiguration
             Effect: Allow
             Resource:
               - '*'
@@ -218,6 +220,7 @@ Resources:
             Effect: Allow
             Resource:
               - arn:*:iam::*:role/*.cluster-api-provider-aws.sigs.k8s.io
+          # capa controllers delete the secret once it's no longer needed. This is also needed.
           - Action:
               - secretsmanager:CreateSecret
               - secretsmanager:DeleteSecret
@@ -300,6 +303,8 @@ Resources:
             Resource:
               - '*'
             Effect: Allow
+          # read-only access to IAM resources attached to the role we create. This is needed for an upcoming rework
+          # where we check if the IAM role or the user has sufficient permissions or not.
           - Action:
               - iam:GetUser
               - iam:GetUserPolicy
