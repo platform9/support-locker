@@ -1,0 +1,24 @@
+# A sample values.yaml file for users who want to install EMP related components on EKS cluster manually, using helm chart.
+images: # images used by EMP components
+  eks_vol_watcher:
+  emp_pod_webhook:
+  evm_autoscaler:
+  evm_vpc_cni:
+  evm_vpc_cni_init:
+manualInstallation: 'true' # (*)
+eksVolWatcher: # (*)
+  secretName: <secret-name>
+evmAutoScaler: # (*)
+  endpoint: <redacted>
+  token: <redacted>
+baremetalInit: # (*)
+  kubeconfig: <redacted>
+  secretName: <secret-name>
+  webhook:
+    namespace: <namespace>
+eksCNI: # (*)
+  secretName: <secret-name>
+applyEMPWebhook: true # this flag determines the installation of EMP Pod Webhook (default: true)
+imagePullSecrets: '' # user needs to populate this field in case images are pushed to a custom registry (note the namespace should be same as specified above)
+
+# (*) denotes that fields are auto-populated by EMP and should not be modified.
