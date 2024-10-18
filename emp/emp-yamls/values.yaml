@@ -1,4 +1,5 @@
 # A sample values.yaml file for users who want to install EMP related components on EKS cluster manually, using helm chart.
+# (*) denotes that fields are auto-populated by EMP and should not be modified.
 images: # images used by EMP components
   eks_vol_watcher: quay.io/platform9/eks-vol-watcher:<version>
   emp_pod_webhook: quay.io/platform9/emp-pod-webhook:<version>
@@ -20,5 +21,3 @@ eksCNI: # (*)
   secretName: <secret-name>
 applyEMPWebhook: true # this flag determines the installation of EMP Pod Webhook (default: true)
 imagePullSecrets: '' # user needs to populate this field in case images are pushed to a custom registry (note the namespace in which secret is created should be same as specified above)
-
-# (*) denotes that fields are auto-populated by EMP and should not be modified.
