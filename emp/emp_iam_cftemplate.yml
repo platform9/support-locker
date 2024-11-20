@@ -218,6 +218,12 @@ Resources:
           - iam:PutRolePolicy
           - iam:RemoveRoleFromInstanceProfile
           - iam:UntagRole
+          - iam:ListUserPolicies
+          - iam:ListAttachedUserPolicies
+          - iam:GetUserPolicy
+          - iam:GetPolicy
+          - iam:GetPolicyVersion
+          - iam:SimulateCustomPolicy
           - elasticfilesystem:Backup
           - elasticfilesystem:CreateAccessPoint
           - elasticfilesystem:CreateFileSystem
