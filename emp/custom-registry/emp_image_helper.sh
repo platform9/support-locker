@@ -16,21 +16,114 @@ fi
 set -eu
 
 IMAGES=""
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/calico/apiserver:master"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/calico/kube-controllers:master"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/calico/node:master"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/calico/pod2daemon-flexvol:master"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/calico/cni:master"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/calico/typha:master"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/pause:3.6"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/tigera/operator:master"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/calico/apiserver:v3.28.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/calico/kube-controllers:v3.28.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/calico/node:v3.28.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/calico/pod2daemon-flexvol:v3.28.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/calico/cni:v3.28.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/calico/typha:v3.28.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/kubevirt/cdi-apiserver:v1.59.1"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/kubevirt/cdi-controller:v1.59.1"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/kubevirt/cdi-operator:v1.59.1"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/kubevirt/cdi-uploadproxy:v1.59.1"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/jetstack/cert-manager-controller:v1.15.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/jetstack/cert-manager-cainjector:v1.15.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/jetstack/cert-manager-webhook:v1.15.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/provider-aws/cloud-controller-manager:v1.27.1"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/coredns/coredns:v1.11.1"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/kas-network-proxy/proxy-agent:v0.0.32"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/metrics-server/metrics-server:v0.6.3"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/autoscaling/addon-resizer:1.8.14"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/kube-proxy:v1.26.6"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/envoyproxy/envoy:v1.26.1"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/platform9/virtvnc:v1"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/platform9/multus:v3.7.2-pmk-2644970"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/kubebuilder/kube-rbac-proxy:v0.11.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/platform9/luigi-plugins:v0.5.5"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/eks-distro/kubernetes-csi/external-attacher:v4.5.0-eks-1-29-7"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/eks-distro/kubernetes-csi/external-provisioner:v4.0.0-eks-1-29-7"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/eks-distro/kubernetes-csi/external-resizer:v1.10.0-eks-1-29-7"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/ebs-csi-driver/aws-ebs-csi-driver:v1.29.1"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/eks-distro/kubernetes-csi/livenessprobe:v2.12.0-eks-1-29-7"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/eks-distro/kubernetes-csi/node-driver-registrar:v2.10.0-eks-1-29-7"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/amazon/aws-efs-csi-driver:v1.5.5"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/eks-distro/kubernetes-csi/livenessprobe:v2.9.0-eks-1-27-latest"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/kube-state-metrics/kube-state-metrics:v2.12.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/prometheus/node-exporter:v1.8.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/prometheus/prometheus:v2.52.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/prometheus-operator/prometheus-config-reloader:v0.73.2"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/grafana/promtail:2.9.3"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/tigera/operator:v1.34.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/eks-distro/kubernetes-csi/external-provisioner:v3.4.0-eks-1-27-latest"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/eks-distro/kubernetes-csi/node-driver-registrar:v2.7.0-eks-1-27-latest"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/jetstack/cert-manager-controller:v1.14.4"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/jetstack/cert-manager-webhook:v1.14.4"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/jetstack/cert-manager-cainjector:v1.14.4"
 IMAGES="$IMAGES registry.k8s.io/pause:3.1"
-IMAGES="$IMAGES registry.k8s.io/kube-controller-manager-amd64:v1.30.2"
-IMAGES="$IMAGES registry.k8s.io/kube-scheduler-amd64:v1.30.2"
-IMAGES="$IMAGES docker.io/nginxinc/nginx-unprivileged:1.25"
-IMAGES="$IMAGES registry.k8s.io/kube-scheduler-amd64:v1.21.4"
-IMAGES="$IMAGES registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.9.0"
-IMAGES="$IMAGES registry.k8s.io/sig-storage/csi-provisioner:v3.6.1"
-IMAGES="$IMAGES registry.k8s.io/sig-storage/csi-resizer:v1.9.1"
-IMAGES="$IMAGES registry.k8s.io/sig-storage/csi-snapshotter:v8.0.1"
-IMAGES="$IMAGES registry.k8s.io/sig-storage/snapshot-controller:v6.3.1"
-IMAGES="$IMAGES quay.io/prometheus/prometheus:v2.48.1"
-IMAGES="$IMAGES quay.io/prometheus-operator/prometheus-operator:v0.70.0"
-IMAGES="$IMAGES quay.io/prometheus-operator/prometheus-config-reloader:v0.70.0"
-IMAGES="$IMAGES quay.io/prometheus/alertmanager:v0.26.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/kubevirt/cdi-apiserver:v1.59.1"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/evm-stack-controller-manager:1.0.369"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/pmk-vpc-cni:1.1.147"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/virt-exportproxy:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/fedora-with-test-tooling-container-disk:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/disks-images-provider:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/network-slirp-binding:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/emp-pmk-init:1.1.183"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/eks-vol-watcher:1.0.369"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/virt-controller:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/virt-handler:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/virt-exportserver:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/pr-helper:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/example-cloudinit-hook-sidecar:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/cirros-custom-container-disk-demo:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/virtio-container-disk:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/alpine-ext-kernel-boot-demo:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/alpine-with-test-tooling-container-disk:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/cni-metrics-helper:1.1.147"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/emp-helm-charts/eks-cluster-chart:1.1.704"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/emp-webhook-eks:1.1.18"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/evm-vpc-cni:1.1.76"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/libguestfs-tools:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/example-hook-sidecar:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/example-disk-mutation-hook-sidecar:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/alpine-container-disk-demo:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/cirros-container-disk-demo:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/vm-killer:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/winrmcli:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/sidecar-shim:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/network-passt-binding:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/evm-autoscaler:1.1.123"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/emp-pod-webhook:1.1.216"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/pmk-vpc-cni-init:1.1.147"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/virt-operator:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/evm-vpc-cni-init:1.1.76"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/virt-api:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/virt-launcher:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/conformance:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/fedora-realtime-container-disk:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/nfs-server:1.1.186"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/aws-ebs-csi-driver:0.2.0"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/emp-helm-charts/baremetal-chart:1.1.814"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/emp-helm-charts/cert-manager:1.14.4"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/emp-helm-charts/promtail:6.15.5"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/emp-helm-charts/promtail-temp:6.15.5"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/eks-distro/kubernetes-csi/external-provisioner:v3.4.0-eks-1-27-latest"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/sig-storage/snapshot-controller:v8.0.1"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/eks-distro/kubernetes-csi/node-driver-registrar:v2.7.0-eks-1-27-latest"
+IMAGES="$IMAGES public.ecr.aws/g5j4a1u5/eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter:v7.0.1-eks-1-29-7"
 
+n=""
+CHART_NAME=""
+CHART=""
+VERSION=""
+rflag=""
 VERBOSE=0
 K8S_CMD=kubectl
 K8SSECRET=emp-secret
@@ -138,32 +231,98 @@ trim_space() {
     echo "$trimmed_str"
 }
 
+name_split() {
+    local iimg="$1"
+    #debug "$1"
+    local chartn="${iimg#*/}"     
+    CHART_NAME="${chartn#*/}"   
+    CHART_NAME="${CHART_NAME%%:*}"
+    #debug "$CHART_NAME" 
+}
+
+aws_create_repo() {
+    local profile="$1"
+    local region="$2"
+    echo "value over here:$3"
+    echo "$1,$2,$3,$CHART_NAME"
+    if [[ -z "$4" ]]; then
+            repo_name="$CHART_NAME"
+        else
+		    repo_name="$4/$CHART_NAME"
+    fi 
+    if [[ "$3" == *public* ]]; then
+    # Try to create the repository, suppressing output and errors
+    if ! aws ecr-public create-repository --repository-name "$repo_name" --region "$region" --profile "$profile" >> $tmpfile 2>&1; then
+        # Check if the error is 'repository already exists' or 'already exists' in the error message
+        if ! grep -q "already exists" "$tmpfile"; then
+            echo "Error creating repository: $repo_name. Exiting."
+            exit 1
+        else
+            echo "Repository $repo_name already exists. Continuing..."
+        fi
+    fi
+else
+    # Try to create the repository, suppressing output and errors
+    if ! aws ecr create-repository --repository-name "$repo_name" --region "$region" --profile "$profile" >> $tmpfile 2>&1; then
+        # Check if the error is 'repository already exists' or 'already exists' in the error message
+        if ! grep -q "already exists" "$tmpfile"; then
+            echo "Error creating repository: $repo_name. Exiting."
+            exit 1
+        else
+            echo "Repository $CHART_NAME already exists. Continuing..."
+        fi
+    fi
+fi
+
+}
+
+helm_pull() {
+	if [[ -z "$CHART" || -z "$VERSION" ]]; then
+		fail "helm_pull: Chart name and version are required"
+	fi
+
+	info "Pulling Helm chart: $CHART@$VERSION"
+	helm pull oci://"$CHART" --version "$VERSION" || fail "Failed to pull Helm image:"
+	debug "Pulled Helm Chart $CHART@$VERSION"
+}
+
 # pull_images - pulls container images with spinner
 pull_images() {
     local num_img    
     num_imgs=$(num_images)
-    num_img=$(trim_space $num_imgs)
+    num_img=$(trim_space "$num_imgs")
     info "Pulling $num_img images for Elastic Machine Pool by Platform9"
-    
+
     # Temporary file for output
     local tmpfile
     tmpfile=$(mktemp)
     debug "Logs are in $tmpfile"
+
     # Async pull with spinner
     {
         for img in $IMAGES; do
-            echo "$img" > $IMG_FILE
-            info "Getting $img"
-            $CNT_CMD pull "$img" 2>&1
+            debug "$img" > $IMG_FILE
+            echo "Getting $img"
+            # Suppress verbose logs, redirect them to the temporary file
+            if [[ "$img" == *chart* || "$img" == *charts* ]]; then
+		        #debug "here1"
+                VERSION="${img##*:}" # Extract version after the colon
+                CHART="${img%:*}"
+		        name_split "$img"	
+                helm_pull 
+            else
+                $CNT_CMD pull "$img" --platform linux/amd64 >> "$tmpfile" 2>&1 || debug "Failed to pull $img" >> "$tmpfile"
+                echo "Pulled $img locally"
+            fi
         done
-    } > "$tmpfile" 2>&1 &
-    
+    } &
+
     # Capture PID of background process
     local pull_pid=$!
-    
+
     # Show spinner while pulling
-    spinner "$pull_pid" 
-    
+    spinner "$pull_pid"
+
     # Check pull results
     if wait "$pull_pid"; then
         info "Successfully pulled $num_img images"
@@ -171,16 +330,34 @@ pull_images() {
         warn "Some images failed to pull. Check the log:"
         cat "$tmpfile" >&2
     fi
-    
+
     # Clean up temp file
     rm "$tmpfile"
 }
 
+# helm_push - Pushes Helm chart to the specified registry
+helm_push() { 
+    local pbs="${CHART_NAME%%/*}"
+    local filename="${CHART_NAME#*/}"
+    local chart_tgz="$filename-$VERSION.tgz"
+    local registry="$1"
+    if [[ -z "$chart_tgz" || -z "$registry" ]]; then
+        fail "helm_push: Chart tarball and target registry are required"
+    fi
+    info "Pushing Helm chart: $chart_tgz to $registry"
+    if [[ "$rflag" == 1 ]]; then
+	    helm push "$chart_tgz" oci://"$registry/$2/$pbs" || fail "Failed to push Helm chart $chart_tgz to $registry"
+    else
+	    helm push "$chart_tgz" oci://"$registry/$2/$pbs" || fail "Failed to push Helm chart $chart_tgz to $registry"
+    fi
+    debug "Pushed Helm chart $chart_tgz to $registry"
+}
+
 # push_images_registry - loads container images into given registry
 push_images_registry() {
-    [ $# -eq 1 ] || fail "push: Please provide registry url"
+    #[ $# -eq 1 ] || fail "push: Please provide registry url"
     local reg=${1%%/}
-
+    #echo "$1,$2,$3,$4"
     local num_img
     num_imgs=$(num_images)
     num_img=$(trim_space $num_imgs)
@@ -209,12 +386,34 @@ push_images_registry() {
         # Push images
         for img in $IMAGES; do
             local tg
-            echo "$img" > $IMG_FILE
-            tg=$(trans "$img")
-            $CNT_CMD tag "$img" "$tg"
-            $CNT_CMD push "$tg"
-            $CNT_CMD rmi "$tg"
-            debug "Pushed $tg into $reg"
+            name_split "$img"
+            VERSION="${img##*:}"
+            echo "$VERSION"
+            if [[ "$rflag" == 1 ]]; then
+		        aws_create_repo "$3" "$4" "$1" "$2"
+	        else
+		        echo "here in jfrog"
+		        debug "tagging:$tg"
+	        fi
+            sleep 3
+            if [[ -z "$2" ]]; then
+                tg="$1/$CHART_NAME:$VERSION"
+            else
+		        tg="$1/$2/$CHART_NAME:$VERSION"
+            fi
+            echo "tagging:$tg"
+            if [[ "$img" == *chart* || "$img" == *charts* ]]; then
+                CHART="${img%:*}"
+		        helm_push "$reg" "$2"
+            else
+                echo "$img" > $IMG_FILE
+                #tg=$(trans "$img")
+                echo "$tg"
+                $CNT_CMD tag "$img" "$tg"
+                $CNT_CMD push "$tg"
+                #$CNT_CMD rmi "$tg"
+                debug "Pushed $tg into $reg"
+            fi
         done
     } > "$tmpfile" 2>&1 &
     
@@ -293,6 +492,14 @@ EXAMPLES:
     $SELF pull
     $SELF push your-registry.company.com:5000/emp-pf9
 
+    #Push Images to ECR
+    $SELF push you-registry --type ecr --profile [profile_to_be_used] --region [aws_region] --n [namespace_name_if_needed]
+    #In ecr the namespace is there for better grouping
+
+    #Push Images to artifactory
+    $SELF push your-registry --type artifactory --n [namespace_if_required]
+    #In artifactory the namespace is the repository in which you want all the images if it is not specified create neccesary repositories for it
+
     # Push images to password-protected remote registry, then import docker/podman configuration as kubernetes secret
     $CNT_CMD login your-registry.company.com:5000
     $SELF pull
@@ -313,10 +520,66 @@ while [ $# -gt 0 ]; do
             pull_images
             ;;
         push)
-            info "Using '$CNT_CMD' to handle container images"
-            [ $# -eq 2 ] || fail "push: Please provide registry endpoint"
-            push_images_registry "$2"
-            shift ;;
+            shift  
+            registry_url="$1"
+            shift
+            info "Registry URL: $registry_url"  # Debugging
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    --type)
+                        READ_REPO="$2"
+                        echo "Registry Type: $READ_REPO"  # Debugging
+                        if [[ "$READ_REPO" != "ecr" && "$READ_REPO" != "jfrog" ]]; then
+                            echo "Please specify a correct registry type (ecr/jfrog)"
+                            exit 1
+                        fi
+                        shift 2
+                        ;;
+                    --profile)
+                        profile="$2"
+                        echo "AWS Profile: $profile"  # Debugging
+                        shift 2
+                        ;;
+                    --region)
+                        region="$2"
+                        echo "AWS Region: $region"  # Debugging
+                        shift 2
+                        ;;
+                    --n)
+                        n="$2"
+                        echo "Nmps $n"
+                        shift 2
+                        ;;
+                    *)
+                        echo "Unknown option: $1"
+                        #usage
+                        exit 1
+                        ;;
+                esac
+            done
+
+            # Validate inputs based on type
+            if [[ -z "$READ_REPO" ]]; then
+                echo "Please specify the registry type (--type ecr/jfrog)"
+                exit 1
+            fi
+
+            if [[ "$READ_REPO" == "ecr" ]]; then
+                rflag=1
+                echo "Type is ECR, validating inputs..."  # Debugging
+                if [[ -z "$profile" || -z "$region" ]]; then
+                    echo "For ECR, please provide --profile and --region"
+                    exit 1
+                fi
+                info "Using '$CNT_CMD' to handle container images"
+                push_images_registry "$registry_url" "$n" "$profile" "$region"
+                echo "ECR inputs validated: Profile=$profile, Region=$region"  # Debugging
+            elif [[ "$READ_REPO" == "jfrog" ]]; then
+                rflag=0
+                info "Using '$CNT_CMD' to handle container images"
+                push_images_registry "$registry_url" "$n"
+            fi
+        ;;
         import-secrets)
             import_secrets
             ;;
