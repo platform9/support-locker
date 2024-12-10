@@ -243,8 +243,6 @@ name_split() {
 aws_create_repo() {
     local profile="$1"
     local region="$2"
-    echo "value over here:$3"
-    echo "$1,$2,$3,$CHART_NAME"
     if [[ -z "$4" ]]; then
             repo_name="$CHART_NAME"
         else
@@ -392,7 +390,7 @@ push_images_registry() {
             if [[ "$rflag" == 1 ]]; then
 		        aws_create_repo "$3" "$4" "$1" "$2"
 	        else
-		        echo "here in jfrog"
+		        debug "here in jfrog"
 		        debug "tagging:$tg"
 	        fi
             sleep 3
@@ -401,14 +399,14 @@ push_images_registry() {
             else
 		        tg="$1/$2/$CHART_NAME:$VERSION"
             fi
-            echo "tagging:$tg"
+            debug "tagging:$tg"
             if [[ "$img" == *chart* || "$img" == *charts* ]]; then
                 CHART="${img%:*}"
 		        helm_push "$reg" "$2"
             else
                 echo "$img" > $IMG_FILE
                 #tg=$(trans "$img")
-                echo "$tg"
+                debug "$tg"
                 $CNT_CMD tag "$img" "$tg"
                 $CNT_CMD push "$tg"
                 #$CNT_CMD rmi "$tg"
@@ -528,9 +526,9 @@ while [ $# -gt 0 ]; do
                 case "$1" in
                     --type)
                         READ_REPO="$2"
-                        echo "Registry Type: $READ_REPO"  # Debugging
-                        if [[ "$READ_REPO" != "ecr" && "$READ_REPO" != "jfrog" ]]; then
-                            echo "Please specify a correct registry type (ecr/jfrog)"
+                        info "Registry Type: $READ_REPO"  # Debugging
+                        if [[ "$READ_REPO" != "ecr" && "$READ_REPO" != "artifactory" ]]; then
+                            echo "Please specify a correct registry type (ecr/artifactory)"
                             exit 1
                         fi
                         shift 2
@@ -560,7 +558,7 @@ while [ $# -gt 0 ]; do
 
             # Validate inputs based on type
             if [[ -z "$READ_REPO" ]]; then
-                echo "Please specify the registry type (--type ecr/jfrog)"
+                echo "Please specify the registry type (--type ecr/artifactory)"
                 exit 1
             fi
 
@@ -574,7 +572,7 @@ while [ $# -gt 0 ]; do
                 info "Using '$CNT_CMD' to handle container images"
                 push_images_registry "$registry_url" "$n" "$profile" "$region"
                 echo "ECR inputs validated: Profile=$profile, Region=$region"  # Debugging
-            elif [[ "$READ_REPO" == "jfrog" ]]; then
+            elif [[ "$READ_REPO" == "artifactory" ]]; then
                 rflag=0
                 info "Using '$CNT_CMD' to handle container images"
                 push_images_registry "$registry_url" "$n"
