@@ -528,28 +528,28 @@ while [ $# -gt 0 ]; do
                         READ_REPO="$2"
                         info "Registry Type: $READ_REPO"  # Debugging
                         if [[ "$READ_REPO" != "ecr" && "$READ_REPO" != "artifactory" ]]; then
-                            echo "Please specify a correct registry type (ecr/artifactory)"
+                            fail "Please specify a correct registry type (ecr/artifactory)"
                             exit 1
                         fi
                         shift 2
                         ;;
                     --profile)
                         profile="$2"
-                        echo "AWS Profile: $profile"  # Debugging
+                        debug "AWS Profile: $profile"  # Debugging
                         shift 2
                         ;;
                     --region)
                         region="$2"
-                        echo "AWS Region: $region"  # Debugging
+                        debug "AWS Region: $region"  # Debugging
                         shift 2
                         ;;
                     --n)
                         n="$2"
-                        echo "Nmps $n"
+                        debug "Nmps $n"
                         shift 2
                         ;;
                     *)
-                        echo "Unknown option: $1"
+                        debug "Unknown option: $1"
                         #usage
                         exit 1
                         ;;
@@ -558,20 +558,20 @@ while [ $# -gt 0 ]; do
 
             # Validate inputs based on type
             if [[ -z "$READ_REPO" ]]; then
-                echo "Please specify the registry type (--type ecr/artifactory)"
+                fail "Please specify the registry type (--type ecr/artifactory)"
                 exit 1
             fi
 
             if [[ "$READ_REPO" == "ecr" ]]; then
                 rflag=1
-                echo "Type is ECR, validating inputs..."  # Debugging
+                info "Type is ECR, validating inputs..."  # Debugging
                 if [[ -z "$profile" || -z "$region" ]]; then
-                    echo "For ECR, please provide --profile and --region"
+                    fail "For ECR, please provide --profile and --region"
                     exit 1
                 fi
                 info "Using '$CNT_CMD' to handle container images"
                 push_images_registry "$registry_url" "$n" "$profile" "$region"
-                echo "ECR inputs validated: Profile=$profile, Region=$region"  # Debugging
+                info "ECR inputs validated: Profile=$profile, Region=$region"  # Debugging
             elif [[ "$READ_REPO" == "artifactory" ]]; then
                 rflag=0
                 info "Using '$CNT_CMD' to handle container images"
