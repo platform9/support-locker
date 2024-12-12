@@ -544,7 +544,7 @@ while [ $# -gt 0 ]; do
                 case "$1" in
                     --type)
                         if [[ -z "${2:-}" ]]; then
-                            fail "Please specify a type after --type"
+                            fail "Please specify a type"
                             exit 1
                         fi
                         READ_REPO="$2"
@@ -557,7 +557,7 @@ while [ $# -gt 0 ]; do
                         ;;
                     --profile)
                         if [[ -z "${2:-}" ]]; then
-                            fail "Please specify a profile after --profile"
+                            fail "Please specify a profile"
                             exit 1
                         fi
                         profile="$2"
@@ -566,7 +566,7 @@ while [ $# -gt 0 ]; do
                         ;;
                     --region)
                         if [[ -z "${2:-}" ]]; then
-                            fail "Please specify a region after --region"
+                            fail "Please specify a region"
                             exit 1
                         fi
                         region="$2"
@@ -575,7 +575,7 @@ while [ $# -gt 0 ]; do
                         ;;
                     --n)
                         if [[ -z "${2:-}" ]]; then
-                            fail "Please specify namespace after --n"
+                            fail "Please specify namespace"
                             exit 1
                         fi
                         n="$2"
