@@ -612,6 +612,9 @@ while [ $# -gt 0 ]; do
             elif [[ "$READ_REPO" == "artifactory" ]]; then
                 rflag=0
                 info "Using '$CNT_CMD' to handle container images"
+                if [[ -z "$n" ]]; then
+                    warn "Namespace not given"
+                fi
                 push_images_registry "$registry_url" "$n"
             fi
         ;;
