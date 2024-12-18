@@ -118,7 +118,7 @@ IMAGES="$IMAGES public.ecr.aws/platform9/grafana/promtail:2.9.3"
 
 #Charts
 IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/eks-cluster-chart:1.1.739"
-IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/baremetal-chart:1.1.850"
+IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/baremetal-chart:1.1.853"
 IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/cert-manager:1.14.4"
 IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/promtail:6.15.5"
 IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/promtail-temp:6.15.5"
@@ -349,20 +349,16 @@ helm_push() {
     local chart_tgz="$filename-$VERSION.tgz"
     local registry="$1"
     if [[ -z "$2" ]]; then
-            repo_name="$registry/$2/$pbs"
-        else
-		    repo_name="$registry/$2/$pbs"
+        repo_name="$registry/$pbs"
+    else
+		repo_name="$registry/$2/$pbs"
     fi
     if [[ -z "$chart_tgz" || -z "$registry" ]]; then
         fail "helm_push: Chart tarball and target registry are required"
     fi
-    info "Pushing Helm chart: $chart_tgz to $registry"
-    if [[ "$rflag" == 1 ]]; then
-	    helm push "$chart_tgz" oci://"$repo_name" || fail "Failed to push Helm chart $chart_tgz to $registry"
-    else
-	    helm push "$chart_tgz" oci://"$repo_name" || fail "Failed to push Helm chart $chart_tgz to $registry"
-    fi
-    debug "Pushed Helm chart $chart_tgz to $registry"
+    info "Pushing Helm chart: $chart_tgz to $repo_name"
+    helm push "$chart_tgz" oci://"$repo_name" || fail "Failed to push Helm chart $chart_tgz to $registry"
+    info "Pushed Helm chart $chart_tgz to $registry"
 }
 
 # push_images_registry - loads container images into given registry
