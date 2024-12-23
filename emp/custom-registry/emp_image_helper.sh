@@ -117,8 +117,8 @@ IMAGES="$IMAGES public.ecr.aws/platform9/eks-vol-watcher:1.0.376"
 IMAGES="$IMAGES public.ecr.aws/platform9/grafana/promtail:2.9.3"
 
 #Charts
-IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/eks-cluster-chart:1.1.739"
-IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/baremetal-chart:1.1.853"
+IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/eks-cluster-chart:1.1.742"
+IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/baremetal-chart:1.1.855"
 IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/cert-manager:1.14.4"
 IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/promtail:6.15.5"
 IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/promtail-temp:6.15.5"
@@ -209,11 +209,11 @@ exit_trap() {
     if [ $rc -eq 0 ]; then
         debug "END"
     else
-        warn "$0 FAILED (rc=$rc)"
+        echo "$0 FAILED (rc=$rc)" >&2
     fi
     exit $rc
 }
-trap exit_trap EXIT
+#trap exit_trap EXIT
 
 # dummy_cmd - replacement for docker/kubelet to display parameters/output
 dummy_cmd() {
@@ -300,6 +300,10 @@ pull_images() {
     num_img=$(trim_space "$num_imgs")
     info "Pulling $num_img images for Elastic Machine Pool by Platform9"
 
+    if ! $CNT_CMD info > /dev/null 2>&1; then
+        fail "Docker is not running. Please start Docker and try again."
+        exit 1
+    fi
     # Temporary file for output
     local tmpfile
     tmpfile=$(mktemp)
