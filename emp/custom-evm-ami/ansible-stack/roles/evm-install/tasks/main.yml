@@ -1,0 +1,294 @@
+---
+- name: Create symbolic link for resolv.conf
+  file:
+    src: /run/systemd/resolve/resolv.conf
+    dest: /etc/resolv.conf
+    state: link
+
+- name: Create pf9 directory
+  file:
+    path: /etc/pf9
+    state: directory
+
+- name: Update MACAddressPolicy
+  lineinfile:
+    path: /usr/lib/systemd/network/99-default.link
+    regexp: '^MACAddressPolicy='
+    line: 'MACAddressPolicy=none'
+
+- name: Update ReadEtcHosts
+  lineinfile:
+    path: /etc/systemd/resolved.conf
+    regexp: '^#ReadEtcHosts'
+    line: 'ReadEtcHosts=yes'
+
+- name: Restart systemd-resolved service
+  systemd:
+    name: systemd-resolved
+    state: restarted
+
+- name: Download Docker GPG key
+  shell: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"
+
+- name: Get dpkg architecture
+  shell: "dpkg --print-architecture"
+  register: dpkg_architecture
+
+- name: Add Docker repository to sources.list.d
+  template:
+    src: docker.list.j2
+    dest: /etc/apt/sources.list.d/docker.list
+
+- name: Update apt repositories
+  apt:
+    update_cache: yes
+
+- name: Install required packages
+  apt:
+    name:
+      - iptables
+      - jq
+      - unzip
+      - wget
+      - net-tools
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+      - containerd.io
+      - ufw
+
+- name: Disable UFW
+  ufw:
+    state: disabled
+
+- name: Stop and disable Apparmor
+  systemd:
+    name: apparmor
+    state: stopped
+    enabled: no
+
+- name: Install qemu-guest-agent
+  apt:
+    name: qemu-guest-agent
+    state: present
+
+- name: Install auditd
+  apt:
+    name: auditd
+    state: present
+
+- name: Add audit rule for execve
+  lineinfile:
+    path: /etc/audit/rules.d/audit.rules
+    line: '-a always,exit -S execve'
+
+- name: Create required directories
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - /var/lib/kubelet
+    - /etc/kubernetes/kubelet
+    - /etc/systemd/system/kubelet.service.d
+    - /var/log/aws
+    - /root/.aws
+    - /etc/cni/net.d
+    - /opt/pf9
+    - /var/log/pf9
+
+- name: Configure sysctl for Kubernetes
+  template:
+    src: k8s.conf.j2
+    dest: /etc/sysctl.d/k8s.conf
+
+- name: Download aws-iam-authenticator
+  get_url:
+    url: https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v0.5.9/aws-iam-authenticator_0.5.9_linux_amd64
+    dest: /usr/bin/aws-iam-authenticator
+    mode: +x
+  
+- name: Download AWS CLI archive
+  get_url:
+    url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+    dest: /tmp/awscliv2.zip
+
+- name: Unzip AWS CLI archive
+  unarchive:
+    src: /tmp/awscliv2.zip
+    dest: /tmp
+    remote_src: yes
+
+- name: Install AWS CLI
+  command:
+    cmd: /tmp/aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+
+- name: Clean up temporary files
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /tmp/awscliv2.zip
+    - /tmp/aws
+
+- name: Create /etc/containerd/config.toml
+  template:
+    src: containerd_config.toml.j2
+    dest: /etc/containerd/config.toml
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Enable and start containerd service
+  systemd:
+    name: containerd
+    enabled: yes
+    state: started
+
+- name: Determine system architecture
+  shell: "uname -m | sed s/aarch64/arm64/ | sed s/x86_64/amd64/"
+  register: arch_output
+  changed_when: false
+
+- name: Set soci snapshotter version name
+  set_fact:
+    version: "0.8.0"
+
+- name: Set archive file name for soci snapshotter
+  set_fact:
+    archive: "soci-snapshotter-{{ version }}-linux-{{ arch_output.stdout }}.tar.gz"
+
+- name: Set download URLs for soci snapshotter
+  set_fact:
+    archive_url: "https://github.com/awslabs/soci-snapshotter/releases/download/v{{ version }}/{{ archive }}"
+    checksum_url: "https://github.com/awslabs/soci-snapshotter/releases/download/v{{ version }}/{{ archive }}.sha256sum"
+
+- name: Download the archive for soci snapshotter
+  get_url:
+    url: "{{ archive_url }}"
+    dest: "/tmp/{{ archive }}"
+    mode: '0644'
+
+- name: Download the checksum for soci snapshotter
+  get_url:
+    url: "{{ checksum_url }}"
+    dest: "/tmp/{{ archive }}.sha256sum"
+    mode: '0644'
+
+- name: Verify checksum
+  shell: "cd /tmp && sha256sum -c {{ archive }}.sha256sum"
+  register: checksum_result
+  failed_when: "'OK' not in checksum_result.stdout"
+  changed_when: false
+
+- name: Extract the soci snapshotter archive to /usr/local/bin
+  unarchive:
+    src: "/tmp/{{ archive }}"
+    dest: "/usr/local/bin"
+    remote_src: yes
+
+- name: Remove the downloaded soci snapshotter archive and checksum file
+  file:
+    path: "/tmp/{{ item }}"
+    state: absent
+  loop:
+    - "{{ archive }}"
+    - "{{ archive }}.sha256sum"
+
+- name: Create configuration directory for soci-snapshotter
+  file:
+    path: /etc/soci-snapshotter-grpc
+    state: directory
+    mode: '0755'
+
+- name: Create config.toml for soci-snapshotter
+  template:
+    src: soci_snapshotter_config.toml.j2
+    dest: /etc/soci-snapshotter-grpc/config.toml
+    mode: '0644'
+
+- name: Create configuration directory for soci-snapshotter
+  file:
+    path: /etc/containerd/config.d
+    state: directory
+    mode: '0755'
+
+- name: Create /etc/containerd/config.d/soci.toml
+  template:
+    src: soci_config.toml.j2
+    dest: /etc/containerd/config.d/soci.toml
+    mode: '0644' 
+
+- name: Download the systemd service file for soci-snapshotter
+  get_url:
+    url: "https://raw.githubusercontent.com/awslabs/soci-snapshotter/v{{ version }}/soci-snapshotter.service"
+    dest: /etc/systemd/system/soci-snapshotter.service
+    mode: '0644'
+
+- name: Reload systemd daemon
+  command: systemctl daemon-reload
+
+- name: Enable and start soci-snapshotter service
+  systemd:
+    name: soci-snapshotter
+    enabled: true
+    state: started
+
+- name: Clean up /tmp directory
+  file:
+    path: "/tmp/{{ item }}"
+    state: absent
+  loop:
+    - "{{ archive }}"
+    - "{{ archive }}.sha256sum"
+
+- name: restart containerd service
+  systemd:
+    name: containerd
+    state: restarted
+
+- name: Create ~/.local/bin directory
+  file:
+    path: "~/.local/bin"
+    state: directory
+
+- name: Set fact for kubectl stable version
+  set_fact:
+    kubectl_stable_version: "{{ lookup('url', 'https://dl.k8s.io/release/stable.txt') }}"
+
+- name: Download kubectl
+  get_url:
+    url: "https://dl.k8s.io/release/{{ kubectl_stable_version }}/bin/linux/amd64/kubectl"
+    dest: "/usr/local/bin/kubectl"
+    mode: "+x"
+
+- name: Remove amazon-ssm-agent
+  shell: "sudo snap remove amazon-ssm-agent"
+
+- name: Download node-exporter
+  get_url:
+    url: "https://github.com/prometheus/node_exporter/releases/download/v1.5.0/node_exporter-1.5.0.linux-amd64.tar.gz"
+    dest: "/tmp/node_exporter.tar.gz"
+    mode: '0644'
+
+- name: Unzip node-exporter
+  unarchive:
+    src: "/tmp/node_exporter.tar.gz"
+    dest: "/opt/pf9/"
+    remote_src: yes
+    mode: "0755"
+
+- name: Create systemd unit file
+  template:
+    src: pf9-node-exporter.service.j2
+    dest: /etc/systemd/system/pf9-node-exporter.service
+
+- name: Reload systemd daemon
+  command: systemctl daemon-reload
+
+- name: Enable and start node-exporter service
+  systemd:
+    name: pf9-node-exporter
+    enabled: true
+    state: started

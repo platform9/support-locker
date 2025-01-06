@@ -1,0 +1,9 @@
+{
+  "source_ami": "",
+  "ami_region": "",
+  "kubelet_version": "",
+  "subnet_id": "",
+  "security_group_id": "",
+  "ami_groups": "",
+  "snapshot_groups": ""
+}

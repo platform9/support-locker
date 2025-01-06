@@ -1,0 +1,80 @@
+{
+  "variables": {
+    "timestamp": "{{timestamp}}"
+  },
+  "_comment": "export AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY while using locally",
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "name": "ec2-evm",
+      "region": "us-west-1",
+      "source_ami": "{{ user `source_ami` }}",
+      "instance_type": "t2.medium",
+      "ssh_username": "ubuntu",
+      "ami_name": "evm-image-{{user `timestamp`}}-{{user `kubelet_version`}}",
+      "ami_regions": "{{ user `ami_region` }}",
+      "ami_description": "AMI with preinstalled utilities for EVM",
+      "tags": {
+        "Name": "evm-image-{{user `timestamp`}}-{{user `kubelet_version`}}",
+        "CreatedBy": "Packer",
+        "emp.pf9.io/evm-ami": "true"
+      },
+      "ami_block_device_mappings": [
+        {
+          "device_name": "/dev/sda1",
+          "volume_size": 12,
+          "volume_type": "gp2",
+          "delete_on_termination": true
+        },
+        {
+          "device_name": "/dev/sdb",
+          "no_device": true
+        },
+        {
+          "device_name": "/dev/sdc",
+          "no_device": true
+        }
+      ],
+      "associate_public_ip_address": true,
+      "subnet_id": "",
+      "security_group_id": "",
+      "ami_groups": "{{ user `ami_groups` }}",
+      "snapshot_groups": "{{ user `snapshot_groups` }}"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "sudo apt-get update",
+        "sudo apt-get install python3-pip -y",
+        "sudo pip3 install ansible"
+      ]
+    },
+    {
+      "type": "ansible-local",
+      "command": "ANSIBLE_FORCE_COLOR=1 PYTHONUNBUFFERED=1 ANSIBLE_STDOUT_CALLBACK=yaml ansible-playbook",
+      "playbook_file": "./ansible-stack/evm-image.yml",
+      "playbook_dir": "./ansible-stack",
+      "extra_arguments": [
+        "--extra-vars",
+        "kubelet_version={{user `kubelet_version`}}"
+      ],
+      "clean_staging_directory": true
+    },
+    {
+      "type": "shell",
+      "script": "scripts/cleanup.sh"
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "manifest",
+      "output": "evm-image-{{user `kubelet_version`}}-manifest.json",
+      "strip_path": true,
+      "custom_data": {
+        "image_name": "evm-image-{{user `timestamp`}}-{{user `kubelet_version`}}"
+      }
+    }
+  ]
+}
