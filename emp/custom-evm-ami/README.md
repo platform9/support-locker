@@ -10,14 +10,17 @@ This directory contains a Packer template and related configuration files to cre
 
 1. **Install Packer**:
    - Download and install Packer from [Packer Downloads](https://www.packer.io/downloads).
+
 2. **Install Packer Amazon EBS Plugin**:
    - The Packer Amazon EBS builder requires the Amazon plugin. Install it by running:
      ```bash
      packer plugins install github.com/hashicorp/amazon
      ```
    - This command ensures all required plugins are installed and ready for use.
+
 3. **AWS Credentials**:
    - Ensure your AWS credentials (`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) are configured.
+
 4. **Required Permissions**:
    - The IAM user or role must have the following permissions to create and manage AMIs:
 
@@ -48,7 +51,6 @@ This directory contains a Packer template and related configuration files to cre
        "ec2:ModifySnapshotAttribute"
      ]
      ```
-
 ---
 
 ### Usage
@@ -96,6 +98,7 @@ This repository is designed to be customizable to meet your specific requirement
 
 The Packer variables are defined in the `packer_var.json` file. Below is a description of the variables you can customize:
 
+
 | Variable            | Description                                                                                      | Required | Example                    |
 | ------------------- | ------------------------------------------------------------------------------------------------ | -------- | -------------------------- |
 | `source_ami`        | The base AMI ID to use for building.                                                             | Yes      | `ami-1234567890abcdef0`    |
@@ -137,17 +140,20 @@ The created AMI will have the following characteristics:
 - **Name**: The AMI name will follow the format:
   ```plaintext
   evm-image-<timestamp>-<kubelet_version>
+
 - **Tags**: The AMI will be tagged with:
-  ```json
+  ```plaintext
   Name: evm-image-<timestamp>-<kubelet_version>
   CreatedBy: Packer
   emp.pf9.io/evm-ami: true
   ```
+
 - **Regions**: The AMI can be distributed to multiple regions as specified in the `packer_var.json` file.
+
 - **Permissions**:
     - **Public**: If snapshot_groups and ami groups are set to all.
     - **Private**: To your account if snapshot_groups and ami groups are left blank.
-    
+
 ## Support
 
 If you encounter any issues or have questions, please open an issue on GitHub or contact support@platform9.com
