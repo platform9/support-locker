@@ -1,6 +1,6 @@
 # EVM AMI Builder
 
-This directory contains a Packer template and related configuration files to create pre-configured Amazon Machine Images (AMIs) compatible with the EMP product. The resulting AMIs are optimized for running the EVM software with pre-installed dependencies and utilities.
+This directory contains a Packer template and related configuration files to create pre-configured Amazon Machine Images (AMIs) compatible with the EMP product. The resulting AMIs are optimized for running the EVMs with pre-installed dependencies and utilities.
 
 ---
 
