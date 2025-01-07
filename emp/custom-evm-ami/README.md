@@ -163,7 +163,11 @@ The created AMI will have the following characteristics:
   ```plaintext
   Name: evm-image-<timestamp>-<kubelet_version>
   CreatedBy: Packer
-  emp.pf9.io/evm-ami: true
+  Timestamp: <timestamp>,
+  emp.pf9.io/evm-custom-ami: true,
+  emp.pf9.io/evm-custom-ami/k8s-version: <kubelet_version>,
+  emp.pf9.io/evm-custom-ami/os-flavor: ubuntu,
+  emp.pf9.io/evm-custom-ami/os-version: <source_ami_os_version>
   ```
 
 - **Regions**: The AMI can be distributed to multiple regions as specified in the `packer-vars.json` file.
