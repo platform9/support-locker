@@ -1,9 +1,13 @@
 {
   "source_ami": "",
+  "region": "",
   "ami_region": "",
   "kubelet_version": "",
   "subnet_id": "",
   "security_group_id": "",
+  "associate_public_ip_address": true|false,
+  "source_os_flavor": "ubuntu",
+  "source_os_version": "",
   "ami_groups": "",
   "snapshot_groups": ""
 }

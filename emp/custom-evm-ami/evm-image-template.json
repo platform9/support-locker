@@ -2,12 +2,12 @@
   "variables": {
     "timestamp": "{{timestamp}}"
   },
-  "_comment": "export AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY while using locally",
+  "_comment": "export AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY while building AMI with packer",
   "builders": [
     {
       "type": "amazon-ebs",
       "name": "ec2-evm",
-      "region": "us-west-1",
+      "region": "{{ user `region` }}",
       "source_ami": "{{ user `source_ami` }}",
       "instance_type": "t2.medium",
       "ssh_username": "ubuntu",
@@ -17,7 +17,11 @@
       "tags": {
         "Name": "evm-image-{{user `timestamp`}}-{{user `kubelet_version`}}",
         "CreatedBy": "Packer",
-        "emp.pf9.io/evm-ami": "true"
+        "Timestamp": "{{user `timestamp`}}",
+        "emp.pf9.io/evm-custom-ami": "true",
+        "emp.pf9.io/evm-custom-ami/k8s-version": "{{user `kubelet_version`}}",
+        "emp.pf9.io/evm-custom-ami/os-flavor": "{{user `source_os_flavor`}}",
+        "emp.pf9.io/evm-custom-ami/os-version": "{{user `source_os_version`}}"
       },
       "ami_block_device_mappings": [
         {
@@ -35,9 +39,9 @@
           "no_device": true
         }
       ],
-      "associate_public_ip_address": true,
-      "subnet_id": "",
-      "security_group_id": "",
+      "associate_public_ip_address": "{{ user `associate_public_ip_address` }}",
+      "subnet_id": "{{ user `subnet_id` }}",
+      "security_group_id": "{{ user `security_group_id` }}",
       "ami_groups": "{{ user `ami_groups` }}",
       "snapshot_groups": "{{ user `snapshot_groups` }}"
     }
