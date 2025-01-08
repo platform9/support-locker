@@ -1,0 +1,66 @@
+---
+- name: Set bucket and kube version variables
+  set_fact:
+    BUCKET_NAME: "emp-kubelet"
+    KUBE_VERSION: "platform9-v{{ kubelet_version }}"
+
+- name: Get latest kubelet binary
+  shell: aws s3 ls --no-sign-request --region us-west-2 s3://{{ BUCKET_NAME }}/{{ KUBE_VERSION }}/ | awk '{print $4}' | tr ' ' '\n' | sort -r | head -n 1
+  register: latest_kubelet_binary
+
+- name: Download latest kubelet binary
+  get_url:
+    url: https://{{ BUCKET_NAME }}.s3.amazonaws.com/{{ KUBE_VERSION }}/{{ latest_kubelet_binary.stdout }}
+    dest: /tmp/{{ latest_kubelet_binary.stdout }}
+    mode: '0755'
+
+- name: Move kubelet binary to /usr/bin
+  command: mv /tmp/{{ latest_kubelet_binary.stdout }} /usr/bin/kubelet
+  args:
+    removes: /tmp/{{ latest_kubelet_binary.stdout }}
+
+- name: Download and install miscellaneous binaries
+  get_url:
+    url: "{{ item.url }}"
+    dest: "{{ item.dest }}"
+    mode: '0755'
+  with_items:
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/bin/imds", dest: "/usr/bin/imds" }
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/bin/vercmp", dest: "/usr/bin/vercmp" }
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/bin/mount-bpf-fs", dest: "/usr/bin/mount-bpf-fs" }
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/bin/provider-id", dest: "/usr/bin/provider-id" }
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/bin/private-dns-name", dest: "/usr/bin/private-dns-name" }
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/bin/setup-local-disks", dest: "/usr/bin/setup-local-disks" }
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/bin/configure-clocksource", dest: "/usr/bin/configure-clocksource" }
+
+- name: Ensure /etc/eks and subdirectories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  with_items:
+    - /etc/eks
+    - /etc/eks/containerd
+    - /etc/eks/image-credential-provider
+
+- name: Download EKS files to /etc/eks
+  get_url:
+    url: "{{ item.url }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/pull-image.sh", dest: "/etc/eks/containerd/pull-image.sh" }
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/configure-clocksource.service", dest: "/etc/eks/configure-clocksource.service" }
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/f247c96cf1d9a659d6203db16cdd011862521349/files/get-ecr-uri.sh", dest: "/etc/eks/get-ecr-uri.sh" }
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/ecr-credential-provider-config.json", dest: "/etc/eks/image-credential-provider/config.json" }
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/eni-max-pods.txt", dest: "/etc/eks/eni-max-pods.txt" }
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/max-pods-calculator.sh", dest: "/etc/eks/max-pods-calculator.sh" }
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/sandbox-image.service", dest: "/etc/eks/containerd/sandbox-image.service" }
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/iptables-restore.service", dest: "/etc/eks/containerd/iptables-restore.service" }
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/containerd-config.toml", dest: "/etc/eks/containerd/containerd-config.toml" }
+    - { url: "https://raw.githubusercontent.com/awslabs/amazon-eks-ami/v20231220/files/pull-sandbox-image.sh", dest: "/etc/eks/containerd/pull-sandbox-image.sh" }
+
+- name: Download ecr-credential-provider
+  get_url:
+    url: https://artifacts.k8s.io/binaries/cloud-provider-aws/v1.28.3/linux/amd64/ecr-credential-provider-linux-amd64
+    dest: /etc/eks/image-credential-provider/ecr-credential-provider
+    mode: '0755'

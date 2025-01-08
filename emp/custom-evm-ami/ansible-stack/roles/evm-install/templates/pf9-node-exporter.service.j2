@@ -1,0 +1,21 @@
+[Unit]
+Description=Platform9 node exporter
+ConditionPathExists=/opt/pf9/node_exporter
+After=network.target
+StartLimitIntervalSec=5s
+StartLimitBurst=2
+
+[Service]
+Type=simple
+RestartSec=50s
+Restart=always
+ExecStart=/bin/bash -c '/opt/pf9/node_exporter --web.listen-address=":9388" \
+--web.disable-exporter-metrics >> /var/log/pf9/node_exporter.log 2>&1'
+
+PIDFile=/var/run/pf9-node_exporter.pid
+Restart=on-failure
+RestartSec=5
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
