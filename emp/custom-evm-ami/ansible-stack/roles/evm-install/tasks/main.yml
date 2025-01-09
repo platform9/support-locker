@@ -243,6 +243,9 @@
     - "{{ archive }}"
     - "{{ archive }}.sha256sum"
 
+- name: Pull pause image
+  shell: ctr -n=k8s.io images pull public.ecr.aws/platform9/pause:3.6
+
 - name: restart containerd service
   systemd:
     name: containerd
@@ -275,9 +278,17 @@
 - name: Unzip node-exporter
   unarchive:
     src: "/tmp/node_exporter.tar.gz"
-    dest: "/opt/pf9/"
+    dest: "/tmp/"
     remote_src: yes
     mode: "0755"
+
+- name: Move node exporter to /opt/pf9
+  copy:
+    src: "/tmp/node_exporter-1.5.0.linux-amd64/node_exporter"
+    dest: "/opt/pf9/node_exporter"
+    mode: '0755'
+    remote_src: yes
+
 
 - name: Create systemd unit file
   template:
