@@ -16,109 +16,70 @@ fi
 set -eu
 
 IMAGES=""
+IMAGES="$IMAGES public.ecr.aws/platform9/eks-vol-watcher:1.0.376"
+IMAGES="$IMAGES public.ecr.aws/platform9/emp-webhook-eks:1.1.22"
+IMAGES="$IMAGES public.ecr.aws/platform9/evm-autoscaler:1.1.157"
+IMAGES="$IMAGES public.ecr.aws/platform9/evm-vpc-cni:1.1.91"
+IMAGES="$IMAGES public.ecr.aws/platform9/evm-vpc-cni-init:1.1.91"
+IMAGES="$IMAGES public.ecr.aws/platform9/grafana/promtail:2.9.3"
+IMAGES="$IMAGES public.ecr.aws/platform9/jetstack/cert-manager-cainjector:v1.14.4"
+IMAGES="$IMAGES public.ecr.aws/platform9/jetstack/cert-manager-controller:v1.14.4"
+IMAGES="$IMAGES public.ecr.aws/platform9/jetstack/cert-manager-webhook:v1.14.4"
+
 #Upstream Images
-IMAGES="$IMAGES public.ecr.aws/platform9/pause:3.6"
-IMAGES="$IMAGES public.ecr.aws/platform9/tigera/operator:v1.32.12"
+IMAGES="$IMAGES public.ecr.aws/platform9/calico/pod2daemon-flexvol:v3.27.5"
+IMAGES="$IMAGES public.ecr.aws/platform9/calico/typha:v3.27.5"
+IMAGES="$IMAGES public.ecr.aws/platform9/calico/cni:v3.27.5"
+IMAGES="$IMAGES public.ecr.aws/platform9/amazon/aws-efs-csi-driver:v1.5.5"
+IMAGES="$IMAGES public.ecr.aws/platform9/autoscaling/addon-resizer:1.8.14"
 IMAGES="$IMAGES public.ecr.aws/platform9/calico/apiserver:v3.27.5"
 IMAGES="$IMAGES public.ecr.aws/platform9/calico/kube-controllers:v3.27.5"
 IMAGES="$IMAGES public.ecr.aws/platform9/calico/node:v3.27.5"
-IMAGES="$IMAGES public.ecr.aws/platform9/calico/pod2daemon-flexvol:v3.27.5"
-IMAGES="$IMAGES public.ecr.aws/platform9/calico/cni:v3.27.5"
 IMAGES="$IMAGES public.ecr.aws/platform9/calico/typha:v3.27.5"
-IMAGES="$IMAGES public.ecr.aws/platform9/kubevirt/cdi-importer:v1.59.1"
-IMAGES="$IMAGES public.ecr.aws/platform9/kubevirt/cdi-cloner:v1.59.1"
-IMAGES="$IMAGES public.ecr.aws/platform9/kubevirt/cdi-uploadserver:v1.59.1"
+IMAGES="$IMAGES public.ecr.aws/platform9/coredns/coredns:v1.11.1"
+IMAGES="$IMAGES public.ecr.aws/platform9/ebs-csi-driver/aws-ebs-csi-driver:v1.29.1"
+IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/external-attacher:v4.5.0-eks-1-29-7"
+IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/external-provisioner:v3.4.0-eks-1-27-latest"
+IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/external-provisioner:v4.0.0-eks-1-29-7"
+IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/external-resizer:v1.10.0-eks-1-29-7"
+IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter:v7.0.1-eks-1-29-7"
+IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/livenessprobe:v2.12.0-eks-1-29-7"
+IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/livenessprobe:v2.9.0-eks-1-27-latest"
+IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/node-driver-registrar:v2.10.0-eks-1-29-7"
+IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/node-driver-registrar:v2.7.0-eks-1-27-latest"
+IMAGES="$IMAGES public.ecr.aws/platform9/emp-pmk-init:1.1.190"
+IMAGES="$IMAGES public.ecr.aws/platform9/emp-pod-webhook:1.1.223"
+IMAGES="$IMAGES public.ecr.aws/platform9/envoyproxy/envoy:v1.26.1"
+IMAGES="$IMAGES public.ecr.aws/platform9/evm-stack-controller-manager:1.0.376"
+IMAGES="$IMAGES public.ecr.aws/platform9/jetstack/cert-manager-cainjector:v1.15.0"
+IMAGES="$IMAGES public.ecr.aws/platform9/jetstack/cert-manager-controller:v1.15.0"
+IMAGES="$IMAGES public.ecr.aws/platform9/jetstack/cert-manager-webhook:v1.15.0"
+IMAGES="$IMAGES public.ecr.aws/platform9/kas-network-proxy/proxy-agent:v0.31.1"
+IMAGES="$IMAGES public.ecr.aws/platform9/kube-proxy:v1.26.6"
+IMAGES="$IMAGES public.ecr.aws/platform9/kube-state-metrics/kube-state-metrics:v2.12.0"
+IMAGES="$IMAGES public.ecr.aws/platform9/kubebuilder/kube-rbac-proxy:v0.11.0"
 IMAGES="$IMAGES public.ecr.aws/platform9/kubevirt/cdi-apiserver:v1.59.1"
 IMAGES="$IMAGES public.ecr.aws/platform9/kubevirt/cdi-controller:v1.59.1"
 IMAGES="$IMAGES public.ecr.aws/platform9/kubevirt/cdi-operator:v1.59.1"
 IMAGES="$IMAGES public.ecr.aws/platform9/kubevirt/cdi-uploadproxy:v1.59.1"
-IMAGES="$IMAGES public.ecr.aws/platform9/jetstack/cert-manager-controller:v1.15.0"
-IMAGES="$IMAGES public.ecr.aws/platform9/jetstack/cert-manager-cainjector:v1.15.0"
-IMAGES="$IMAGES public.ecr.aws/platform9/jetstack/cert-manager-webhook:v1.15.0"
-IMAGES="$IMAGES public.ecr.aws/platform9/provider-aws/cloud-controller-manager:v1.27.1"
-IMAGES="$IMAGES public.ecr.aws/platform9/coredns/coredns:v1.11.1"
-IMAGES="$IMAGES public.ecr.aws/platform9/kas-network-proxy/proxy-agent:v0.0.32"
 IMAGES="$IMAGES public.ecr.aws/platform9/metrics-server/metrics-server:v0.6.4"
-IMAGES="$IMAGES public.ecr.aws/platform9/autoscaling/addon-resizer:1.8.14"
-IMAGES="$IMAGES public.ecr.aws/platform9/kube-proxy:v1.26.6"
-IMAGES="$IMAGES public.ecr.aws/platform9/envoyproxy/envoy:v1.26.1"
-IMAGES="$IMAGES public.ecr.aws/platform9/platform9/virtvnc:v1"
-IMAGES="$IMAGES public.ecr.aws/platform9/platform9/multus:v3.7.2-pmk-2644970"
-IMAGES="$IMAGES public.ecr.aws/platform9/kubebuilder/kube-rbac-proxy:v0.11.0"
-IMAGES="$IMAGES public.ecr.aws/platform9/platform9/luigi-plugins:v0.5.5"
-IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/external-attacher:v4.5.0-eks-1-29-7"
-IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/external-provisioner:v4.0.0-eks-1-29-7"
-IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/external-resizer:v1.10.0-eks-1-29-7"
-IMAGES="$IMAGES public.ecr.aws/platform9/ebs-csi-driver/aws-ebs-csi-driver:v1.29.1"
-IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/livenessprobe:v2.12.0-eks-1-29-7"
-IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/node-driver-registrar:v2.10.0-eks-1-29-7"
-IMAGES="$IMAGES public.ecr.aws/platform9/amazon/aws-efs-csi-driver:v1.5.5"
-IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/livenessprobe:v2.9.0-eks-1-27-latest"
-IMAGES="$IMAGES public.ecr.aws/platform9/kube-state-metrics/kube-state-metrics:v2.12.0"
-IMAGES="$IMAGES public.ecr.aws/platform9/prometheus/node-exporter:v1.8.0"
+IMAGES="$IMAGES public.ecr.aws/platform9/platform9/multus:v4.1.4"
+IMAGES="$IMAGES public.ecr.aws/platform9/pmk-vpc-cni:1.1.184"
+IMAGES="$IMAGES public.ecr.aws/platform9/pmk-vpc-cni-init:1.1.184"
 IMAGES="$IMAGES public.ecr.aws/platform9/prometheus/prometheus:v2.52.0"
 IMAGES="$IMAGES public.ecr.aws/platform9/prometheus-operator/prometheus-config-reloader:v0.73.2"
-IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/external-provisioner:v3.4.0-eks-1-27-latest"
-IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/node-driver-registrar:v2.7.0-eks-1-27-latest"
-IMAGES="$IMAGES public.ecr.aws/platform9/pause:3.1"
-IMAGES="$IMAGES public.ecr.aws/platform9/kubevirt/cdi-apiserver:v1.59.1"
-IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/external-provisioner:v3.4.0-eks-1-27-latest"
+IMAGES="$IMAGES public.ecr.aws/platform9/prometheus/node-exporter:v1.8.0"
+IMAGES="$IMAGES public.ecr.aws/platform9/provider-aws/cloud-controller-manager:v1.27.1"
 IMAGES="$IMAGES public.ecr.aws/platform9/sig-storage/snapshot-controller:v8.0.1"
-IMAGES="$IMAGES public.ecr.aws/platform9/eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter:v7.0.1-eks-1-29-7"
-IMAGES="$IMAGES public.ecr.aws/platform9/aws-ebs-csi-driver:0.2.0"
-
-#Builder changes
-#Kubevirt images
-IMAGES="$IMAGES public.ecr.aws/platform9/virt-exportproxy:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/fedora-with-test-tooling-container-disk:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/disks-images-provider:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/network-slirp-binding:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/virt-controller:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/virt-handler:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/virt-exportserver:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/pr-helper:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/example-cloudinit-hook-sidecar:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/cirros-custom-container-disk-demo:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/virtio-container-disk:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/alpine-ext-kernel-boot-demo:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/alpine-with-test-tooling-container-disk:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/libguestfs-tools:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/example-hook-sidecar:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/example-disk-mutation-hook-sidecar:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/alpine-container-disk-demo:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/cirros-container-disk-demo:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/vm-killer:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/winrmcli:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/sidecar-shim:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/network-passt-binding:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/virt-operator:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/virt-api:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/virt-launcher:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/conformance:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/fedora-realtime-container-disk:1.1.189"
-IMAGES="$IMAGES public.ecr.aws/platform9/nfs-server:1.1.189"
-
-IMAGES="$IMAGES public.ecr.aws/platform9/evm-stack-controller-manager:1.0.376"
-IMAGES="$IMAGES public.ecr.aws/platform9/pmk-vpc-cni:1.1.152"
-IMAGES="$IMAGES public.ecr.aws/platform9/emp-pmk-init:1.1.190"
-IMAGES="$IMAGES public.ecr.aws/platform9/cni-metrics-helper:1.1.152"
-IMAGES="$IMAGES public.ecr.aws/platform9/emp-pod-webhook:1.1.223"
-IMAGES="$IMAGES public.ecr.aws/platform9/pmk-vpc-cni-init:1.1.152"
-
-#EKS images
-IMAGES="$IMAGES public.ecr.aws/platform9/jetstack/cert-manager-controller:v1.14.4"
-IMAGES="$IMAGES public.ecr.aws/platform9/jetstack/cert-manager-webhook:v1.14.4"
-IMAGES="$IMAGES public.ecr.aws/platform9/jetstack/cert-manager-cainjector:v1.14.4"
-IMAGES="$IMAGES public.ecr.aws/platform9/emp-webhook-eks:1.1.22"
-IMAGES="$IMAGES public.ecr.aws/platform9/evm-autoscaler:1.1.132"
-IMAGES="$IMAGES public.ecr.aws/platform9/evm-vpc-cni:1.1.81"
-IMAGES="$IMAGES public.ecr.aws/platform9/evm-vpc-cni-init:1.1.81"
-IMAGES="$IMAGES public.ecr.aws/platform9/eks-vol-watcher:1.0.376"
-IMAGES="$IMAGES public.ecr.aws/platform9/grafana/promtail:2.9.3"
-
+IMAGES="$IMAGES public.ecr.aws/platform9/tigera/operator:v1.32.12"
+IMAGES="$IMAGES public.ecr.aws/platform9/virt-api:1.1.205"
+IMAGES="$IMAGES public.ecr.aws/platform9/virt-controller:1.1.205"
+IMAGES="$IMAGES public.ecr.aws/platform9/virt-handler:1.1.205"
+IMAGES="$IMAGES public.ecr.aws/platform9/virt-launcher:1.1.205"
+IMAGES="$IMAGES public.ecr.aws/platform9/virt-operator:1.1.205"
 #Charts
-IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/eks-cluster-chart:1.1.742"
-IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/baremetal-chart:1.1.855"
+IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/eks-cluster-chart:1.1.759"
+IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/baremetal-chart:1.1.881"
 IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/cert-manager:1.14.4"
 IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/promtail:6.15.5"
 IMAGES="$IMAGES public.ecr.aws/platform9/emp-helm-charts/promtail-temp:6.15.5"
@@ -304,47 +265,44 @@ pull_images() {
         fail "Docker is not running. Please start Docker and try again."
         exit 1
     fi
+
     # Temporary file for output
     local tmpfile
     tmpfile=$(mktemp)
     debug "Logs are in $tmpfile"
 
-    # Async pull with spinner
-    {
-        for img in $IMAGES; do
-            debug "$img" > $IMG_FILE
-            info "Getting $img"
-            # Suppress verbose logs, redirect them to the temporary file
-            if [[ "$img" == *chart* || "$img" == *charts* ]]; then
-		        #debug "here1"
-                VERSION="${img##*:}" # Extract version after the colon
-                CHART="${img%:*}"
-		        name_split "$img"	
-                helm_pull 
-            else
-                $CNT_CMD pull "$img" --platform linux/amd64 >> "$tmpfile" 2>&1 || debug "Failed to pull $img" >> "$tmpfile"
-                info "Pulled $img locally"
+    # Pull images sequentially and stop on failure
+    for img in $IMAGES; do
+        debug "$img" > $IMG_FILE
+        info "Getting $img"
+        if [[ "$img" == *chart* || "$img" == *charts* ]]; then
+            VERSION="${img##*:}" # Extract version after the colon
+            CHART="${img%:*}"
+            name_split "$img"
+            if ! helm_pull; then
+                warn "Failed to pull chart $img. Stopping further pulls."
+                cat "$tmpfile" >&2
+                rm "$tmpfile"
+                return 1
             fi
-        done
-    } &
+        else
+            if ! $CNT_CMD pull "$img" --platform linux/amd64 >> "$tmpfile" 2>&1; then
+                warn "Failed to pull $img. Stopping further pulls."
+                cat "$tmpfile" >&2
+                rm "$tmpfile"
+                return 1
+            fi
+            info "Pulled $img locally"
+        fi
+    done
 
-    # Capture PID of background process
-    local pull_pid=$!
-
-    # Show spinner while pulling
-    spinner "$pull_pid"
-
-    # Check pull results
-    if wait "$pull_pid"; then
-        info "Successfully pulled $num_img images"
-    else
-        warn "Some images failed to pull. Check the log:"
-        cat "$tmpfile" >&2
-    fi
+    # All images pulled successfully
+    info "Successfully pulled $num_img images"
 
     # Clean up temp file
     rm "$tmpfile"
 }
+
 
 # helm_push - Pushes Helm chart to the specified registry
 helm_push() { 
