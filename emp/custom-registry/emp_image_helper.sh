@@ -27,9 +27,9 @@ IMAGES="$IMAGES public.ecr.aws/platform9/jetstack/cert-manager-controller:v1.14.
 IMAGES="$IMAGES public.ecr.aws/platform9/jetstack/cert-manager-webhook:v1.14.4"
 
 #Upstream Images
-IMAGES="$IMAGES public.ecr.aws/platform9/calico/pod2daemon-flexvol:v3.27.5"
-IMAGES="$IMAGES public.ecr.aws/platform9/calico/typha:v3.27.5"
-IMAGES="$IMAGES public.ecr.aws/platform9/calico/cni:v3.27.5"
+IMAGES="$IMAGES public.ecr.aws/platform9/calico/pod2daemon-flexvol:v3.28.0"
+IMAGES="$IMAGES public.ecr.aws/platform9/calico/typha:v3.28.0"
+IMAGES="$IMAGES public.ecr.aws/platform9/calico/cni:v3.28.0"
 IMAGES="$IMAGES public.ecr.aws/platform9/amazon/aws-efs-csi-driver:v1.5.5"
 IMAGES="$IMAGES public.ecr.aws/platform9/autoscaling/addon-resizer:1.8.22"
 IMAGES="$IMAGES public.ecr.aws/platform9/calico/apiserver:v3.27.5"
@@ -71,7 +71,7 @@ IMAGES="$IMAGES public.ecr.aws/platform9/prometheus-operator/prometheus-config-r
 IMAGES="$IMAGES public.ecr.aws/platform9/prometheus/node-exporter:v1.8.0"
 IMAGES="$IMAGES public.ecr.aws/platform9/provider-aws/cloud-controller-manager:v1.27.1"
 IMAGES="$IMAGES public.ecr.aws/platform9/sig-storage/snapshot-controller:v8.0.1"
-IMAGES="$IMAGES public.ecr.aws/platform9/tigera/operator:v1.32.12"
+IMAGES="$IMAGES public.ecr.aws/platform9/tigera/operator:v1.34.0"
 IMAGES="$IMAGES public.ecr.aws/platform9/virt-api:1.1.205"
 IMAGES="$IMAGES public.ecr.aws/platform9/virt-controller:1.1.205"
 IMAGES="$IMAGES public.ecr.aws/platform9/virt-handler:1.1.205"
