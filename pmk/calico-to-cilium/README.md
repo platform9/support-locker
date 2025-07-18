@@ -58,12 +58,20 @@ chmod +x migrate-cni.sh
 ./migrate-cni.sh
 ```
 
+### Note:
+To completely automate the script without any interactive prompts, set the environment variable AUTO_APPROVE=true. This will auto-approve all confirmation prompts and proceed without manual input.
+Additionally, if the script runs in a non-interactive terminal (like CI/CD), it will auto-approve by default.
+
+AUTO_APPROVE=true ./migrate-cni.sh
+
 ---
 
 ### Post-Migration
 
-After the migration from Calico to Cilium is complete, the cluster details in UI may still display "Calico" as the network plugin. This is due to outdated metadata and does not reflect the actual state of the cluster.
-You can reach out to platform9 support team to update the metadata.
+After the migration from Calico to Cilium is complete, the cluster details in UI would still display "Calico" and its containers cidr. This is outdated metadata and does not reflect the actual state of the cluster.
+You can use the "/update_cni_on_migration" QBERT API specifically for this.
+
+More info: https://platform9.com/docs/qbert
 
 ---
 

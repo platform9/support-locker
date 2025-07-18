@@ -160,22 +160,19 @@ else
     log "1.  Replace '__IPV4_ENABLED__' with 'true' (if using IPv4, usually yes)."
     log "    Look for: 'enable-ipv4: \"__IPV4_ENABLED__\"' and 'k8s-require-ipv4-pod-cidr: \"__IPV4_ENABLED__\"'"
     log ""
-    log "2.  Change 'kube-proxy-replacement: \"true\"' to 'kube-proxy-replacement: \"strict\"'."
-    log "    This is to set the desired kube-proxy replacement mode after passing initial boolean validation."
-    log ""
-    log "3.  Replace '__MASTER_IP__' with your Kubernetes API Service Virtual IP (VIP) for multi-master cluster."
+    log "2.  Replace '__MASTER_IP__' with your Kubernetes API Service Virtual IP (VIP) for multi-master cluster."
     log "    Get the VIP by consulting your load balancer or network configuration."
     log "    Look for: 'value: \"__MASTER_IP__\"' under KUBERNETES_SERVICE_HOST env var."
     log ""
-    log "4.  (Conditional) If your 'ipam' is set to 'cluster-pool' (in cilium-config):"
+    log "3.  (Conditional) If your 'ipam' is set to 'cluster-pool' (in cilium-config):"
     log "    Replace '__CILIUM_IPV4POOL_CIDR__' with the CIDR you defined (e.g., ${CILIUM_IPV4_CLUSTER_POOL_CIDR})."
     log "    Example: 'cluster-pool-ipv4-cidr: \"10.42.0.0/16\"'"
     log "    Confirm 'cluster-pool-ipv4-mask-size' is appropriate (e.g., '24' for /24 per node)."
     log ""
-    log "5.  Replace '__CILIUM_INSTALL_CNI_CPU__' with '100m' and '__CILIUM_INSTALL_CNI_MEMORY__' with '100Mi'."
+    log "4.  Replace '__CILIUM_INSTALL_CNI_CPU__' with '100m' and '__CILIUM_INSTALL_CNI_MEMORY__' with '100Mi'."
     log "    These are for resource requests of the 'install-cni-binaries' initContainer."
     log ""
-    log "6.  Review image tags (e.g., quay.io/cilium/cilium:v1.17.5). Ensure they match your desired Cilium version."
+    log "5.  Review image tags (e.g., quay.io/cilium/cilium:v1.17.5). Ensure they match your desired Cilium version."
     log "    If the generated YAML has a different version than your target, consider manually adjusting it."
     log ""
     log "Add any other custom configurations (e.g., specific tolerations, resource limits) as needed."
@@ -286,6 +283,7 @@ case "$1" in
 EOF
     chmod +x /opt/pf9/pf9-kube/network_plugins/cilium/cilium.sh
     echo "export PF9_NETWORK_PLUGIN=\"cilium\"" >> /etc/pf9/kube_override.env
+    echo "export CONTAINERS_CIDR=\"__CILIUM_CIDR_PLACEHOLDER__\"" >> /etc/pf9/kube_override.env
     log_node "Restarting pf9-kubelet service."
     sudo systemctl restart pf9-kubelet || { log_node "ERROR: Failed to restart pf9-kubelet."; exit 1; }
 
@@ -318,6 +316,7 @@ EOF
 esac
 EOF_NODE_SCRIPT
 
+sed -i "s|__CILIUM_CIDR_PLACEHOLDER__|${CILIUM_IPV4_CLUSTER_POOL_CIDR}|g" "${NODE_TASK_SCRIPT_NAME}"
 chmod +x "${NODE_TASK_SCRIPT_NAME}" || { log "Error: Failed to make ${NODE_TASK_SCRIPT_NAME} executable."; exit 1; }
 log "Local node task script '${NODE_TASK_SCRIPT_NAME}' created and made executable."
 
