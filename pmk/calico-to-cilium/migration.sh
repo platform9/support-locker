@@ -25,13 +25,13 @@ CILIUM_CLI_VERSION_OVERRIDE="v0.18.5" # Explicitly setting to your currently wor
 CILIUM_TARGET_CLUSTER_VERSION="v1.17.5" # <--- IMPORTANT: Set this to the Cilium CNI version you want to deploy
 CILIUM_IPV4_CLUSTER_POOL_CIDR="10.42.0.0/16" # Example: REPLACE THIS with your actual UNUSED CIDR
 CALICO_NODE_IMAGE="calico/node:v3.27.2" # Your confirmed Calico image version
+CILIUM_INTERFACE="" # <--- IMPORTANT: Change this to your preferred network interface for cilium to pick. If left empty, interface having default route will be picked.
 SSH_USER="root" # <--- IMPORTANT: Change this to your SSH user on the nodes (MUST have passwordless sudo)
+SLEEP_AFTER_DRAIN=30 # Default sleep time (in seconds) after draining a node before continuing
 
 KUBE_SYSTEM_NAMESPACE="kube-system"
 BACKUP_DIR="${HOME}/k8s_migration_backup_$(date +%Y%m%d%H%M%S)"
 CILIUM_MANIFEST_FILE="cilium.yaml"
-CILIUM_UPDATED_MANIFEST_FILE="cilium_updated_manifests.yaml"
-CILIUM_NETWORK_POLICY_FILE="your-cilium-network-policies.yaml" # Replace if you have specific CNPs
 
 NODE_TASK_SCRIPT_NAME="node_migration_task.sh"
 REMOTE_NODE_TASK_PATH="/tmp/${NODE_TASK_SCRIPT_NAME}" # Path to store script on remote node
@@ -79,6 +79,21 @@ run_on_node_ssh() {
 
 
 # --- Phase 0: Prerequisites ---
+log "=============================================================="
+log "  VERIFY THE FOLLOWING CONFIGURATION BEFORE PROCEEDING"
+log "=============================================================="
+echo ""
+echo " CILIUM_CLI_VERSION_OVERRIDE     = ${CILIUM_CLI_VERSION_OVERRIDE}"
+echo " CILIUM_TARGET_CLUSTER_VERSION   = ${CILIUM_TARGET_CLUSTER_VERSION}"
+echo " CILIUM_IPV4_CLUSTER_POOL_CIDR   = ${CILIUM_IPV4_CLUSTER_POOL_CIDR}"
+echo " CALICO_NODE_IMAGE               = ${CALICO_NODE_IMAGE}"
+echo " CILIUM_INTERFACE                = ${CILIUM_INTERFACE:-<auto-detected default route interface>}"
+echo " SSH_USER                        = ${SSH_USER}"
+echo " SLEEP_AFTER_DRAIN (seconds)     = ${SLEEP_AFTER_DRAIN}"
+echo ""
+log "IMPORTANT: If any of the above are incorrect, edit the script before continuing."
+confirm "Do you want to proceed with the above configuration?"
+
 log "PHASE 0: Checking Prerequisites..."
 check_command kubectl; check_command curl; check_command scp; check_command ssh; check_command jq # Added jq check
 
@@ -146,7 +161,13 @@ else
 	--set policyEnforcementMode=never \
 	--set cleanCilumetdFiles=false \
 	--set cleanLocalCiliumFiles=false \
+	--set devices="{$CILIUM_INTERFACE}" \
 	> "${CILIUM_MANIFEST_FILE}" || { log "Error: Failed to generate Cilium manifests with cilium-cli."; exit 1; }
+
+    if [ -z "$CILIUM_INTERFACE" ]; then
+        sed -i '/^[[:space:]]*devices:.*$/d' "${CILIUM_MANIFEST_FILE}"
+        log "WARNING: No network interface provided, proceeding with default cilium interface detection."
+    fi
 
     log "Cilium manifests generated to: ${CILIUM_MANIFEST_FILE}"
 
@@ -447,6 +468,9 @@ for NODE_INFO_LINE in "${NODE_LINES[@]}"; do
     fi
   fi
 
+  log "Waiting for drained pods to fully terminate on ${NODE_NAME} (sleeping ${SLEEP_AFTER_DRAIN}s)..."
+  sleep "${SLEEP_AFTER_DRAIN}"
+
   log "======================================================================"
   log "AUTOMATED NODE-LEVEL CNI CONFIGURATION ON NODE: ${NODE_NAME}"
   log "======================================================================"
@@ -549,7 +573,7 @@ log "======================================================================"
 log "AUTOMATING: Updating ${CILIUM_MANIFEST_FILE} for final configuration (enable-policy: default)"
 log "======================================================================"
 if [ ! -f "${CILIUM_MANIFEST_FILE}" ]; then log "Error: Cilium manifest file '${CILIUM_MANIFEST_FILE}' not found."; exit 1; fi
-sed -i 's/enable-policy":"never"/enable-policy":"default"/' "${CILIUM_MANIFEST_FILE}"; if [ $? -ne 0 ]; then log "Error: Failed to automatically change 'enable-policy'."; confirm "Automatic policy enforcement update failed. Proceed manually? (Type 'yes' to edit and re-run script or fix file)"; fi
+sed -i 's/enable-policy: "never"/enable-policy: "default"/' "${CILIUM_MANIFEST_FILE}"; if [ $? -ne 0 ]; then log "Error: Failed to automatically change 'enable-policy'."; confirm "Automatic policy enforcement update failed. Proceed manually? (Type 'yes' to edit and re-run script or fix file)"; fi
 
 log "3.3. Re-applying updated Cilium Manifests..."
 kubectl apply -f "${CILIUM_MANIFEST_FILE}" || { log "Error: Failed to apply updated Cilium manifests."; exit 1; }
