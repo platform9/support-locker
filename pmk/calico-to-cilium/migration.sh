@@ -28,6 +28,7 @@ CALICO_NODE_IMAGE="calico/node:v3.27.2" # Your confirmed Calico image version
 CILIUM_INTERFACE="" # <--- IMPORTANT: Change this to your preferred network interface for cilium to pick. If left empty, interface having default route will be picked.
 SSH_USER="root" # <--- IMPORTANT: Change this to your SSH user on the nodes (MUST have passwordless sudo)
 SLEEP_AFTER_DRAIN=30 # Default sleep time (in seconds) after draining a node before continuing
+DS_ROLLOUT_TIMEOUT="10m" # Timeout for cilium daemonset rollout
 
 KUBE_SYSTEM_NAMESPACE="kube-system"
 BACKUP_DIR="${HOME}/k8s_migration_backup_$(date +%Y%m%d%H%M%S)"
@@ -410,8 +411,8 @@ log "PHASE 2: Apply Cilium Manifests & Node-by-Node Migration..."
 log "2.1. Applying Initial Cilium Kubernetes Manifests..."
 kubectl apply -f "${CILIUM_MANIFEST_FILE}" || { log "Error: Failed to apply Cilium manifests."; exit 1; }
 log "Cilium manifests applied. Waiting for pods to be ready..."
-kubectl rollout status ds/cilium -n ${KUBE_SYSTEM_NAMESPACE} --timeout=5m || { log "Cilium DaemonSet did not become ready."; exit 1; }
-kubectl rollout status deploy/cilium-operator -n ${KUBE_SYSTEM_NAMESPACE} --timeout=5m || { log "Cilium Operator did not become ready."; exit 1; }
+kubectl rollout status ds/cilium -n ${KUBE_SYSTEM_NAMESPACE} --timeout=${DS_ROLLOUT_TIMEOUT} || { log "Cilium DaemonSet did not become ready."; exit 1; }
+kubectl rollout status deploy/cilium-operator -n ${KUBE_SYSTEM_NAMESPACE} --timeout=${DS_ROLLOUT_TIMEOUT} || { log "Cilium Operator did not become ready."; exit 1; }
 
 log "2.2. Verifying Initial Cilium Status (should be mostly healthy, but not yet managing all endpoints)."
 CILIUM_AGENT_POD_NAME=$(kubectl get pods -n ${KUBE_SYSTEM_NAMESPACE} -l k8s-app=cilium -o jsonpath='{.items[0].metadata.name}')
@@ -580,7 +581,7 @@ kubectl apply -f "${CILIUM_MANIFEST_FILE}" || { log "Error: Failed to apply upda
 
 log "3.4. Restarting Cilium DaemonSet to apply new configuration..."
 kubectl -n ${KUBE_SYSTEM_NAMESPACE} rollout restart daemonset cilium
-kubectl rollout status ds/cilium -n ${KUBE_SYSTEM_NAMESPACE} --timeout=5m || { log "Cilium DaemonSet did not become ready."; exit 1; }
+kubectl rollout status ds/cilium -n ${KUBE_SYSTEM_NAMESPACE} --timeout=${DS_ROLLOUT_TIMEOUT} || { log "Cilium DaemonSet did not become ready."; exit 1; }
 log "Cilium has been updated with final configuration."
 
 log "======================================================================"

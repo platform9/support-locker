@@ -51,6 +51,7 @@ Set the following variables at the top of the script to match your environment:
 | `CILIUM_IPV4_CLUSTER_POOL_CIDR` | Cilium pod IP pool (e.g., `10.42.0.0/16`)              |
 | `SSH_USER`                      | SSH user for node access (must have passwordless sudo) |
 | `SLEEP_AFTER_DRAIN`             | sleep time in seconds after each node drain            |
+| `DS_ROLLOUT_TIMEOUT`            | cilium daemonset rollout timeout                       |
 | `CILIUM_INTERFACE`              | network interface for cilium to pick                   |
 
 ###  Make the Script Executable
