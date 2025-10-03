@@ -25,6 +25,7 @@ CILIUM_CLI_VERSION_OVERRIDE="v0.18.5" # Explicitly setting to your currently wor
 CILIUM_TARGET_CLUSTER_VERSION="v1.17.5" # <--- IMPORTANT: Set this to the Cilium CNI version you want to deploy
 CILIUM_IPV4_CLUSTER_POOL_CIDR="10.42.0.0/16" # Example: REPLACE THIS with your actual UNUSED CIDR
 CALICO_NODE_IMAGE="calico/node:v3.27.2" # Your confirmed Calico image version
+CALICO_IPV4_CIDR="" # Calico cidr to remove container routes during cleanup phase.
 CILIUM_INTERFACE="" # <--- IMPORTANT: Change this to your preferred network interface for cilium to pick. If left empty, interface having default route will be picked.
 SSH_USER="root" # <--- IMPORTANT: Change this to your SSH user on the nodes (MUST have passwordless sudo)
 SLEEP_AFTER_DRAIN=30 # Default sleep time (in seconds) after draining a node before continuing
@@ -88,6 +89,7 @@ echo " CILIUM_CLI_VERSION_OVERRIDE     = ${CILIUM_CLI_VERSION_OVERRIDE}"
 echo " CILIUM_TARGET_CLUSTER_VERSION   = ${CILIUM_TARGET_CLUSTER_VERSION}"
 echo " CILIUM_IPV4_CLUSTER_POOL_CIDR   = ${CILIUM_IPV4_CLUSTER_POOL_CIDR}"
 echo " CALICO_NODE_IMAGE               = ${CALICO_NODE_IMAGE}"
+echo " CALICO_IPV4_CIDR                = ${CALICO_IPV4_CIDR:-<calico cidr not set, skipping route cleanup>}"
 echo " CILIUM_INTERFACE                = ${CILIUM_INTERFACE:-<auto-detected default route interface>}"
 echo " SSH_USER                        = ${SSH_USER}"
 echo " SLEEP_AFTER_DRAIN (seconds)     = ${SLEEP_AFTER_DRAIN}"
@@ -237,6 +239,75 @@ log_node "FORCE-CLEANING all IPv4 iptables rules and user-defined chains (Calico
   fi
 }
 
+# --- Function: Check if IP is inside a CIDR ---
+is_ip_in_cidr() {
+    local ip=$1
+    local cidr=$2
+    local ip_dec cidr_ip cidr_mask network_dec ip_masked network_masked
+
+    # Convert IP to decimal
+    IFS=. read -r i1 i2 i3 i4 <<< "$ip"
+    ip_dec=$(( (i1 << 24) + (i2 << 16) + (i3 << 8) + i4 ))
+
+    # Split CIDR
+    cidr_ip=${cidr%/*}
+    cidr_mask=${cidr#*/}
+
+    IFS=. read -r c1 c2 c3 c4 <<< "$cidr_ip"
+    network_dec=$(( (c1 << 24) + (c2 << 16) + (c3 << 8) + c4 ))
+
+    # Build mask
+    network_masked=$(( network_dec >> (32 - cidr_mask) ))
+    ip_masked=$(( ip_dec >> (32 - cidr_mask) ))
+
+    [[ $ip_masked -eq $network_masked ]]
+}
+
+perform_calico_routes_cleanup() {
+    local CALICO_CIDR="$1"
+    if [[ -z "$CALICO_CIDR" ]]; then
+        log_node "No Calico CIDR provided for cleanup. Skipping route cleanup."
+        return
+    fi
+
+    log_node "Starting stale route cleanup inside CIDR: $CALICO_CIDR"
+    local stale_routes=""
+    while read -r route_line; do
+        # First field might be "blackhole" or a CIDR
+        first_field=$(echo "$route_line" | awk '{print $1}')
+        second_field=$(echo "$route_line" | awk '{print $2}')
+
+        if [[ "$first_field" == "blackhole" ]]; then
+                route_cidr="$second_field"
+                route_cmd="blackhole $second_field"
+        else
+                route_cidr="$first_field"
+                route_cmd="$first_field"
+        fi
+
+        # Check if this route's CIDR falls inside our target CIDR
+        base_ip=${route_cidr%/*}
+        if is_ip_in_cidr "$base_ip" "$CALICO_CIDR"; then
+                stale_routes+="$route_cmd"$'\n'
+        fi
+    done < <(ip route show)
+
+    if [[ -z "$stale_routes" ]]; then
+        log_node "No stale routes found inside CIDR $CALICO_CIDR."
+        return
+    fi
+
+    log_node "Found stale routes inside $CALICO_CIDR:"
+    echo "$stale_routes"
+
+    while IFS= read -r route_cmd; do
+        [[ -z "$route_cmd" ]] && continue
+        log_node "Deleting stale route: $route_cmd"
+        eval "sudo ip route del $route_cmd" || \
+        log_node "WARNING: Failed to delete route $route_cmd. Manual intervention may be required."
+    done <<< "$stale_routes"
+}
+
 # --- Main Node Task Execution ---
 case "$1" in
   prepare_node)
@@ -327,6 +398,9 @@ EOF
     sudo rm -rf /var/lib/calico/ /etc/cni/net.d/*calico* || { log_node "WARNING: Failed to remove some Calico files. Manual intervention may be needed."; }
     log_node "Running final Calico iptables cleanup."
     perform_local_calico_iptables_cleanup || { log_node "WARNING: Final Calico iptables cleanup failed locally."; } # Don't exit here, just warn
+    log_node "Cleaning up stale Calico routes..."
+    CIDR_ARG="$2"
+    perform_calico_routes_cleanup "${CIDR_ARG:-$CALICO_IPV4_CIDR}"
     log_node "Restarting pf9-kubelet service after final cleanup."
     sudo systemctl restart pf9-kubelet || { log_node "WARNING: Failed to restart pf9-kubelet after final cleanup. Manual intervention may be needed."; }
     log_node "Final node cleanup tasks complete."
@@ -619,7 +693,7 @@ kubectl get nodes -o json | jq -r '.items[] | [.metadata.name, (.status.addresse
   log "--- Performing final cleanup on node: ${NODE_NAME_FINAL} (${NODE_IP_FINAL}) via SSH ---"
   
   log "Executing node_migration_task.sh for 'final_cleanup' on node ${NODE_NAME_FINAL}."
-  if ! run_on_node_ssh "${NODE_IP_FINAL}" "sudo ${REMOTE_NODE_TASK_PATH} final_cleanup"; then
+  if ! run_on_node_ssh "${NODE_IP_FINAL}" "sudo ${REMOTE_NODE_TASK_PATH} final_cleanup ${CALICO_IPV4_CIDR}"; then
     log "WARNING: Final node cleanup failed on ${NODE_NAME_FINAL}. Manual intervention required."
     confirm "Manual final node cleanup needed on ${NODE_NAME_FINAL}. Proceed anyway? (HIGH RISK)"
   else
