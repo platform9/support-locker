@@ -1,6 +1,25 @@
 #!/bin/bash
 set -euo pipefail
 
+usage() {
+    echo "Usage: $0 [--help]"
+    echo ""
+    echo "Interactively queries a DU to list all hosts missing the 'pf9-ha-slave' role"
+    echo "across HA-enabled clusters. Results are written to a timestamped file:"
+    echo "  missing_hosts_<YYYYMMDD_HHMMSS>.txt"
+    echo ""
+    echo "Options:"
+    echo "  --help    Show this help message and exit"
+    echo ""
+    echo "The generated file can be passed to apply_ha_role.sh to apply the role."
+    exit 0
+}
+
+# Handle --help
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+    usage
+fi
+
 # Colors for stderr output (verbose/debug logs go to stderr so stdout stays pipeable)
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -93,12 +112,17 @@ ALL_HOSTS_JSON=$(do_curl GET "${BASE_URL}/resmgr/v1/hosts")
 ALL_HOSTS_COUNT=$(echo "$ALL_HOSTS_JSON" | jq 'length')
 log_info "Found ${ALL_HOSTS_COUNT} host(s) total."
 
-# ─── Output header (to stdout, pipeable to file) ────────────────────────────
-# Format: HOST_ID | HOSTNAME | CLUSTER_NAME | RESPONDING | HYPERVISOR_STATUS | CURRENT_ROLES
+# ─── Prepare output file ─────────────────────────────────────────────────────
 
-echo "# host_id | hostname | cluster_name | responding | pf9-ostackhost-neutron_status | current_roles"
-echo "# Generated: $(date '+%Y-%m-%d %H:%M:%S') | DU: ${DU_FQDN}"
-echo "#"
+TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
+OUTPUT_FILE="missing_hosts_${TIMESTAMP}.txt"
+log_info "Output file: ${OUTPUT_FILE}"
+
+{
+    echo "# host_id | hostname | cluster_name | responding | pf9-ostackhost-neutron_status | current_roles"
+    echo "# Generated: $(date '+%Y-%m-%d %H:%M:%S') | DU: ${DU_FQDN}"
+    echo "#"
+} > "${OUTPUT_FILE}"
 
 TOTAL_MISSING=0
 
@@ -174,8 +198,8 @@ for (( i=0; i<CLUSTER_COUNT; i++ )); do
 
         log_debug "  Host ${HOST_ID} (${HOSTNAME}): responding=${RESPONDING}, pf9-ostackhost-neutron=${HV_STATUS}, roles=${ROLES}"
 
-        # Stdout line: pipeable, parseable
-        echo "${HOST_ID} | ${HOSTNAME} | ${CLUSTER_NAME} | ${RESPONDING} | ${HV_STATUS} | ${ROLES}"
+        # Write to output file
+        echo "${HOST_ID} | ${HOSTNAME} | ${CLUSTER_NAME} | ${RESPONDING} | ${HV_STATUS} | ${ROLES}" >> "${OUTPUT_FILE}"
     done
 
     TOTAL_MISSING=$((TOTAL_MISSING + MISSING_COUNT))
@@ -188,6 +212,9 @@ if [[ "$TOTAL_MISSING" -eq 0 ]]; then
     log_info "Nothing to do. All HA-enabled cluster hosts already have the role."
 fi
 
+log_info "Results written to: ${OUTPUT_FILE}"
+echo "" >&2
 echo -e "${GREEN}============================================${NC}" >&2
 echo -e "${GREEN}  Listing complete.${NC}" >&2
+echo -e "${GREEN}  Output: ${OUTPUT_FILE}${NC}" >&2
 echo -e "${GREEN}============================================${NC}" >&2
