@@ -39,7 +39,7 @@ list_missing_ha_hosts.sh
 ### Usage
 
 ```bash
-./list_missing_ha_hosts.sh > missing_hosts.txt
+./list_missing_ha_hosts.sh
 ```
 
 You will be prompted for:
@@ -49,16 +49,15 @@ You will be prompted for:
 
 ### Output File Format
 
-The generated file (`missing_hosts.txt`) contains entries in the format:
+The generated file (`missing_hosts_{TIMESTAMP}.txt`) contains entries in the format:
 
 ```text
 host_id | hostname | cluster_name | responding | hypervisor_status | current_roles
 ```
 
-### Sample `missing_hosts.txt`
+### Sample `missing_hosts_TIMESTAMP.txt`
 
 ```bash
-cat missing_hosts.txt
 # host_id | hostname | cluster_name | responding | pf9-ostackhost-neutron_status | current_roles
 # Generated: 2026-02-24 13:58:24 | DU: test-du-drr-4430735-hkg.app.qa-pcd.platform9.com
 #
@@ -78,7 +77,7 @@ apply_ha_role.sh
 ### Usage
 
 ```bash
-./apply_ha_role.sh missing_hosts.txt
+./apply_ha_role.sh missing_hosts_TIMESTAMP.txt
 ```
 
 ### Expected File Format
@@ -104,17 +103,17 @@ host_id | hostname | cluster_name | responding | hypervisor_status | current_rol
 
 ```bash
 # Step 1: Identify missing HA roles
-./list_missing_ha_hosts.sh > missing_hosts.txt
+./list_missing_ha_hosts.sh
 
 # Step 2: Apply HA role
-./apply_ha_role.sh missing_hosts.txt
+./apply_ha_role.sh missing_hosts_<TIMESTAMP>.txt
 ```
 
 ---
 
 # Post-Run Validation and Retry
 
-After running `./apply_ha_role.sh missing_hosts.txt`, wait a few minutes and verify again:
+After running `./apply_ha_role.sh missing_hosts_<TIMESTAMP>.txt`, wait a few minutes and verify again:
 
 ```bash
 ./list_missing_ha_hosts.sh > missing_hosts.txt
