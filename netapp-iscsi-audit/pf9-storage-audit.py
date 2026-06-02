@@ -86,6 +86,10 @@ def get_all_servers():
 
 def get_server(server_id):
     s = os_cmd("server", "show", server_id)
+    if not s or not isinstance(s, dict):
+        print(f"[ERROR] Could not retrieve server '{server_id}' — check the UUID/name and RC file.",
+              file=sys.stderr)
+        sys.exit(1)
     host = (s.get("OS-EXT-SRV-ATTR:hypervisor_hostname")
             or s.get("OS-EXT-SRV-ATTR:host", ""))
     return {
@@ -177,7 +181,9 @@ def _netapp_get_all(host, user, password, path, params=None):
         next_href = data.get("_links", {}).get("next", {}).get("href")
         if not next_href:
             break
-        path   = next_href.lstrip("/").removeprefix("api/")
+        path   = next_href.lstrip("/")
+        if path.startswith("api/"):
+            path = path[4:]
         params = {}
     return records
 
@@ -722,7 +728,7 @@ def detect(servers, netapp_host, netapp_user, netapp_password, svm,
             matched = [s for s in nova_shorts if key.lower() in s]
             if matched:
                 for s in matched:
-                    host_iqn_map[s] = {iqn}
+                    host_iqn_map.setdefault(s, set()).add(iqn)
                     print(f"  --host-iqn: {s} → {iqn}", flush=True)
             else:
                 print(f"  [WARN] --host-iqn: no host matched '{key}' (known: {', '.join(nova_shorts)})",
