@@ -1063,7 +1063,7 @@ def main():
     )
     parser.add_argument("--hitachi-host",      required=True,
                         help="Hitachi VSP management IP or hostname")
-    parser.add_argument("--hitachi-user",      default="svol_admin",
+    parser.add_argument("--hitachi-user",      default="openstack",
                         help="Hitachi storage admin user (default: svol_admin)")
     parser.add_argument("--hitachi-password",  help="Prompted if omitted")
     parser.add_argument("--storage-device-id", default=None,
