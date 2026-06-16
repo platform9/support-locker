@@ -97,10 +97,11 @@ check_output() {
 # Query the array directly so results reflect actual state, not just script output.
 
 _hv_lun_paths_for_ldev() {
-    # Returns JSON array of LU path records for a given LDEV across all iSCSI ports
+    # Returns JSON array of LU path records for a given LDEV across all iSCSI ports.
+    # VSP E1090 requires portId+hostGroupNumber on /luns — we fetch host groups first.
     local ldev_id="$1"
     python3 - <<EOF
-import json, base64, ssl, urllib.request, urllib.parse
+import json, base64, ssl, urllib.request
 ldev_id = int('${ldev_id}')
 host       = '${HITACHI_HOST}'
 storage_id = '${STORAGE_ID}'
@@ -108,16 +109,20 @@ user       = '${HITACHI_USER}'
 pwd        = '${HITACHI_PASS}'
 ports      = '${ISCSI_PORTS}'.split()
 creds = base64.b64encode(f'{user}:{pwd}'.encode()).decode()
-headers = {'Authorization': f'Basic {creds}', 'Accept': 'application/json'}
+headers = {'Authorization': f'Basic {creds}', 'Accept': 'application/json', 'Content-Type': 'application/json'}
 ctx = ssl.create_default_context(); ctx.check_hostname = False
 import ssl as _ssl; ctx.verify_mode = _ssl.CERT_NONE
+
+def hv_get(path):
+    url = f'https://{host}/ConfigurationManager/v1/objects/storages/{storage_id}/{path}'
+    return json.loads(urllib.request.urlopen(urllib.request.Request(url, headers=headers), context=ctx).read())
+
 all_paths = []
 for port in ports:
-    url = (f'https://{host}/ConfigurationManager/v1/'
-           f'objects/storages/{storage_id}/luns?portId={port}&count=500')
-    data = json.loads(urllib.request.urlopen(
-        urllib.request.Request(url, headers=headers), context=ctx).read())
-    all_paths.extend(m for m in data.get('data', []) if m.get('ldevId') == ldev_id)
+    for hg in hv_get(f'host-groups?portId={port}').get('data', []):
+        hg_num = hg.get('hostGroupNumber')
+        luns = hv_get(f'luns?portId={port}&hostGroupNumber={hg_num}&count=500')
+        all_paths.extend(m for m in luns.get('data', []) if m.get('ldevId') == ldev_id)
 print(json.dumps(all_paths))
 EOF
 }
@@ -210,7 +215,7 @@ setup() {
 
     local c1; c1=$(hv_count "${LDEV_ID1}")
     local g1; g1=$(hv_hgroups "${LDEV_ID1}")
-    local expected_paths=$(( 2 * ${#ISCSI_PORTS} ))  # 1 path per port in clean state
+    local expected_paths; expected_paths=$(echo "$ISCSI_PORTS" | wc -w)  # 1 LU path per iSCSI port
     if echo "$g1" | grep -qF "$HG_1_2_NAME"; then
         echo "  ✓ LDEV1: mapped to ${HG_1_2_NAME}"
     else
