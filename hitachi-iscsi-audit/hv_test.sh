@@ -13,10 +13,6 @@ echo "=== LDEV 129 ==="
 hv "ldevs/129"
 echo ""
 
-echo "=== LDEV 105 ==="
-hv "ldevs/105"
-echo ""
-
 echo "=== LUNS CL1-D HG6 (pn01) ==="
 hv "luns?portId=CL1-D&hostGroupNumber=6&count=20"
 echo ""

@@ -318,28 +318,39 @@ def get_host_groups(host, user, password, storage_id, port_ids):
     return result
 
 
-def get_lun_paths(host, user, password, storage_id, port_ids):
+def get_lun_paths(host, user, password, storage_id, host_groups):
     """Return {ldev_id (int): [list of LU path dicts]} across all iSCSI ports.
 
     Each dict: {hg_name, hg_number, port_id, lun, lun_id}
     lun_id is the VSP composite key "portId,hostGroupNumber,lun" used in DELETE URLs.
+
+    VSP E1090 requires both portId AND hostGroupNumber on the /luns endpoint.
+    host_groups must be the output of get_host_groups() so we can iterate
+    port+hostgroup combinations rather than ports alone.
     """
     result = {}
-    for port_id in port_ids:
-        paths = _hv_get_all(host, user, password,
-                            f"objects/storages/{storage_id}/luns",
-                            {"portId": port_id})
-        for p in paths:
-            ldev_id = p.get("ldevId")
-            if ldev_id is None:
+    seen = set()  # (port_id, hg_number) already queried — avoid duplicates
+    for hg_name, hg_data in host_groups.items():
+        for port_id, port_data in hg_data["ports"].items():
+            hg_number = port_data["hg_number"]
+            key = (port_id, hg_number)
+            if key in seen:
                 continue
-            result.setdefault(ldev_id, []).append({
-                "hg_name":   p.get("hostGroupName", ""),
-                "hg_number": p.get("hostGroupNumber", 0),
-                "port_id":   p.get("portId", ""),
-                "lun":       p.get("lun"),
-                "lun_id":    p.get("lunId", ""),
-            })
+            seen.add(key)
+            paths = _hv_get_all(host, user, password,
+                                f"objects/storages/{storage_id}/luns",
+                                {"portId": port_id, "hostGroupNumber": str(hg_number)})
+            for p in paths:
+                ldev_id = p.get("ldevId")
+                if ldev_id is None:
+                    continue
+                result.setdefault(ldev_id, []).append({
+                    "hg_name":   hg_name,
+                    "hg_number": p.get("hostGroupNumber", hg_number),
+                    "port_id":   p.get("portId", port_id),
+                    "lun":       p.get("lun"),
+                    "lun_id":    p.get("lunId", ""),
+                })
     return result
 
 
@@ -726,13 +737,12 @@ def detect(servers, hitachi_host, hitachi_user, hitachi_password, storage_id,
         print("[ERROR] No iSCSI ports found on the storage device.", file=sys.stderr)
         sys.exit(1)
 
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        hg_future  = pool.submit(get_host_groups, hitachi_host, hitachi_user, hitachi_password,
+    # get_host_groups must run first — get_lun_paths needs the port+hostgroup
+    # combinations because VSP E1090 requires hostGroupNumber on /luns queries.
+    host_groups = get_host_groups(hitachi_host, hitachi_user, hitachi_password,
                                   storage_id, port_ids)
-        lun_future = pool.submit(get_lun_paths,   hitachi_host, hitachi_user, hitachi_password,
-                                  storage_id, port_ids)
-        host_groups = hg_future.result()
-        lun_paths   = lun_future.result()
+    lun_paths   = get_lun_paths(hitachi_host, hitachi_user, hitachi_password,
+                                storage_id, host_groups)
 
     # Pre-load LDEV labels for fallback volume matching (only LDEVs that have LU paths)
     ldev_label_map = {}
