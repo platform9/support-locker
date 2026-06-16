@@ -196,7 +196,15 @@ setup() {
     echo ""
     echo "=== provider_location for TEST_VOL1 (LDEV ID) ==="
     openstack volume show "${TEST_VOL1}" -f json 2>/dev/null \
-        | python3 -c "import sys,json; v=json.load(sys.stdin); print('provider_location:', v.get('provider_location', 'NOT VISIBLE — need admin scope'))"
+        | python3 -c "
+import sys, json
+data = sys.stdin.read().strip()
+if not data:
+    print('provider_location: NOT VISIBLE — openstack CLI not available or RC not sourced')
+else:
+    v = json.loads(data)
+    print('provider_location:', v.get('provider_location', 'NOT VISIBLE — need admin scope'))
+" || true
 
     echo ""
     echo "Fill in at the top of this script:"
