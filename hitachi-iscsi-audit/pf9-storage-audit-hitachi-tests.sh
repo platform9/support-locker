@@ -11,7 +11,7 @@ set -euo pipefail
 # ── Credentials & paths ───────────────────────────────────────────────────────
 HITACHI_HOST="192.168.176.64"
 HITACHI_USER="openstack"
-HITACHI_PASS=""                  # set via env or fill in locally; check cinder.conf on the DU controller
+HITACHI_PASS="${HITACHI_PASS:?Set HITACHI_PASS env var before running: export HITACHI_PASS=...}"
 SSH_KEY="/tmp/testing_key_clean"
 SCRIPT="python3 $(cd "$(dirname "$0")" && pwd)/pf9-storage-audit-hitachi.py"
 
@@ -46,18 +46,18 @@ ISCSI_PORT1="CL1-D"
 ISCSI_PORT2="CL2-D"
 ISCSI_PORTS="${ISCSI_PORT1} ${ISCSI_PORT2}"
 
-HG_1_2_NAME="FILL_ME_IN"        # host group name for HOST_1_2 (openstack-<uuid>)
-HG_1_1_NAME="FILL_ME_IN"        # host group name for HOST_00_1 (openstack-<uuid>)
-HG_1_2_NUMBER=0                  # host group number for HG_1_2 on each port
-HG_1_1_NUMBER=1                  # host group number for HG_1_1 on each port
+HG_1_2_NAME="HBSD-192.168.177.210"  # host group name for HOST_1_2 (pf9-n01)
+HG_1_1_NAME="HBSD-192.168.177.211"  # host group name for HOST_00_1 (pf9-n02)
+HG_1_2_NUMBER=6                      # host group number on CL1-D (5 on CL2-D)
+HG_1_1_NUMBER=8                      # host group number on CL1-D (7 on CL2-D)
 
-LDEV_ID1=0                       # decimal LDEV ID for TEST_VOL1 (from provider_location)
-LDEV_ID2=0                       # decimal LDEV ID for TEST_VOL2
+LDEV_ID1=105                     # decimal LDEV ID for TEST_VOL1 (sanya-vm-bootvol)
+LDEV_ID2=129                     # decimal LDEV ID for TEST_VOL2 (sanya-vm-2-bootvol)
 
-# Existing LU path IDs for vol1 on the correct host group (CL1-A,hg_number,lun).
+# Existing LU path IDs for vol1 on the correct host group (portId,hg_number,lun).
 # Used in cleanup when auto-removal fails.
-LUN_ID_VOL1_PORT1="FILL_ME_IN"  # e.g. CL1-A,0,0
-LUN_ID_VOL1_PORT2="FILL_ME_IN"  # e.g. CL2-A,0,0
+LUN_ID_VOL1_PORT1="CL1-D,6,0"
+LUN_ID_VOL1_PORT2="CL2-D,5,0"
 
 SVM=""  # Not used for Hitachi; kept as placeholder for script parity
 
