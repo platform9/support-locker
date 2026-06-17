@@ -121,8 +121,12 @@ all_paths = []
 for port in ports:
     for hg in hv_get(f'host-groups?portId={port}').get('data', []):
         hg_num = hg.get('hostGroupNumber')
+        hg_name = hg.get('hostGroupName', '')
         luns = hv_get(f'luns?portId={port}&hostGroupNumber={hg_num}&count=500')
-        all_paths.extend(m for m in luns.get('data', []) if m.get('ldevId') == ldev_id)
+        for m in luns.get('data', []):
+            if m.get('ldevId') == ldev_id:
+                m['hostGroupName'] = hg_name  # /luns omits this field; inject from host-groups
+                all_paths.append(m)
 print(json.dumps(all_paths))
 EOF
 }
