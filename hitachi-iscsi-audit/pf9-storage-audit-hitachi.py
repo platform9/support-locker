@@ -776,18 +776,8 @@ def detect(servers, hitachi_host, hitachi_user, hitachi_password, storage_id,
             except Exception as exc:
                 print(f"  [WARN] {server['name']}: {exc}", file=sys.stderr)
 
-    # Pass 2a: infer ground-truth IQNs from clean (nova == cinder) attachments
+    # Pass 2b: manual --host-iqn entries (run first — authoritative, never overridden)
     host_iqn_map = {}
-    for item in collected:
-        nova_s   = item["nova_host"].split(".")[0].lower()
-        cinder_s = item["cinder_host"].split(".")[0].lower() if item["cinder_host"] else ""
-        if cinder_s and nova_s == cinder_s:
-            for m in item["lun_maps"]:
-                hg_data = host_groups.get(m["hg_name"], {})
-                for iqn in hg_data.get("iqns", set()):
-                    host_iqn_map.setdefault(nova_s, set()).add(iqn)
-
-    # Pass 2b: manual --host-iqn entries (additive — don't discard inferred IQNs)
     if manual_iqns:
         nova_shorts = {item["nova_host"].split(".")[0].lower() for item in collected}
         for key, iqn in manual_iqns.items():
@@ -799,6 +789,21 @@ def detect(servers, hitachi_host, hitachi_user, hitachi_password, storage_id,
             else:
                 print(f"  [WARN] --host-iqn: no host matched '{key}' (known: {', '.join(nova_shorts)})",
                       file=sys.stderr)
+
+    # Pass 2a: infer IQNs from clean (nova == cinder) attachments for hosts not
+    # covered by --host-iqn.  Skipped for covered hosts: a VM with a stale dual
+    # mapping would add the stale host's IQN into the nova host's set, causing
+    # _classify_lun_maps to treat the stale group as "correct" and miss the issue.
+    for item in collected:
+        nova_s   = item["nova_host"].split(".")[0].lower()
+        cinder_s = item["cinder_host"].split(".")[0].lower() if item["cinder_host"] else ""
+        if nova_s in host_iqn_map:
+            continue  # explicit --host-iqn takes precedence — do not infer
+        if cinder_s and nova_s == cinder_s:
+            for m in item["lun_maps"]:
+                hg_data = host_groups.get(m["hg_name"], {})
+                for iqn in hg_data.get("iqns", set()):
+                    host_iqn_map.setdefault(nova_s, set()).add(iqn)
 
     # Pass 2c: SSH for hosts still without IQNs
     if ssh_user:
