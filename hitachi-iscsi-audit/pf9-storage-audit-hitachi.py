@@ -187,9 +187,9 @@ def _hv_get(host, user, password, path, params=None):
             return json.loads(raw) if raw else {}
     except urllib.error.HTTPError as e:
         body = e.read().decode()
-        print(f"[ERROR] Hitachi GET {url} → {e.code}: {body}", file=sys.stderr)
         if e.code == 404:
             return {}  # resource doesn't exist (e.g. host group with no iSCSI names)
+        print(f"[ERROR] Hitachi GET {url} → {e.code}: {body}", file=sys.stderr)
         sys.exit(1)
     except urllib.error.URLError as e:
         print(f"[ERROR] Cannot reach Hitachi at {host}: {e.reason}", file=sys.stderr)
