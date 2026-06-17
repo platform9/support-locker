@@ -98,6 +98,23 @@ check_output() {
 # ── Hitachi state assertion helpers ──────────────────────────────────────────
 # Query the array directly so results reflect actual state, not just script output.
 
+_hv_wait_jobs() {
+    # Poll until no async jobs are in Initializing/Running state (up to 30s).
+    local deadline=$(($(date +%s) + 30))
+    while [ "$(date +%s)" -lt "$deadline" ]; do
+        local pending
+        pending=$(hv "objects/storages/${STORAGE_ID}/jobs" \
+            | python3 -c "
+import sys, json
+jobs = json.load(sys.stdin).get('data', [])
+print(sum(1 for j in jobs if j.get('status') in ('Initializing', 'Running')))
+" 2>/dev/null || echo "0")
+        [ "${pending:-0}" -eq 0 ] && return
+        sleep 2
+    done
+    echo "  [WARN] Timed out waiting for Hitachi jobs"
+}
+
 _hv_lun_paths_for_ldev() {
     # Returns JSON array of LU path records for a given LDEV across all iSCSI ports.
     # VSP E1090 requires portId+hostGroupNumber on /luns — we fetch host groups first.
@@ -366,6 +383,7 @@ s3-inject() {
             -d "{\"portId\": \"${port}\", \"hostGroupNumber\": ${HG_1_1_NUMBER}, \"ldevId\": ${LDEV_ID1}}" \
             | python3 -m json.tool
     done
+    _hv_wait_jobs  # wait for async LU path create jobs before deleting source paths
     # Remove the correct (source) paths
     _delete_hg_paths_for_ldev "${LDEV_ID1}" "${HG_1_2_NAME}"
     echo "Done — only HG_1_1 (wrong) paths remain."
@@ -513,6 +531,7 @@ _ssh_host() {
 
 s8-inject() {
     echo "=== S8: inject — remove HG_1_2 LU paths for LDEV1 to orphan mpath on ${HOST_1_2} ==="
+    _hv_wait_jobs  # wait for async LU path create jobs before removing source paths
     _delete_hg_paths_for_ldev "${LDEV_ID1}" "${HG_1_2_NAME}"
     echo "Paths removed. Polling up to 60s for paths to go failed on ${HOST_1_2}..."
     local deadline=$(($(date +%s) + 60))
