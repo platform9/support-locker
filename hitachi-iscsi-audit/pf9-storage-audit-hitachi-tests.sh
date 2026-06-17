@@ -12,7 +12,7 @@ set -euo pipefail
 HITACHI_HOST="192.168.176.64"
 HITACHI_USER="openstack"
 HITACHI_PASS="${HITACHI_PASS:?Set HITACHI_PASS env var before running: export HITACHI_PASS=...}"
-SSH_KEY="/tmp/testing_key_clean"
+SSH_KEY="${SSH_KEY_PATH:-$HOME/.ssh/id_rsa}"
 SCRIPT="python3 $(cd "$(dirname "$0")" && pwd)/pf9-storage-audit-hitachi.py"
 
 # ── Compute hosts (short names must match hypervisor hostnames in OpenStack) ──
@@ -128,6 +128,36 @@ for port in ports:
                 m['hostGroupName'] = hg_name  # /luns omits this field; inject from host-groups
                 all_paths.append(m)
 print(json.dumps(all_paths))
+EOF
+}
+
+_delete_hg_paths_for_ldev() {
+    # Usage: _delete_hg_paths_for_ldev <ldev_id> <hg_name>
+    # Fetches all LU paths for ldev_id and DELETEs the ones belonging to hg_name.
+    # Passes JSON as sys.argv[1] to avoid the pipe+heredoc stdin conflict.
+    local ldev_id="$1" hg_name="$2"
+    local paths_json
+    paths_json=$(_hv_lun_paths_for_ldev "$ldev_id")
+    python3 - "$paths_json" "$hg_name" <<EOF
+import sys, json, base64, ssl, urllib.request, urllib.parse
+paths   = json.loads(sys.argv[1])
+hg_name = sys.argv[2]
+host       = "${HITACHI_HOST}"
+storage_id = "${STORAGE_ID}"
+user       = "${HITACHI_USER}"
+pwd        = "${HITACHI_PASS}"
+creds = base64.b64encode(f'{user}:{pwd}'.encode()).decode()
+headers = {'Authorization': f'Basic {creds}', 'Accept': 'application/json'}
+ctx = ssl.create_default_context(); ctx.check_hostname = False
+import ssl as _ssl; ctx.verify_mode = _ssl.CERT_NONE
+for m in paths:
+    if m.get('hostGroupName') == hg_name:
+        lun_id = m.get('lunId', '')
+        url = (f'https://{host}/ConfigurationManager/v1/'
+               f'objects/storages/{storage_id}/luns/{urllib.parse.quote(lun_id, safe="")}')
+        req = urllib.request.Request(url, method='DELETE', headers=headers)
+        urllib.request.urlopen(req, context=ctx)
+        print(f'Deleted {lun_id}')
 EOF
 }
 
@@ -290,27 +320,7 @@ print(match if match is not None else '${HG_1_1_NUMBER}')
 
 s2-cleanup() {
     echo "=== S2: cleanup — removing injected HG_1_1 paths for LDEV1 ==="
-    _hv_lun_paths_for_ldev "${LDEV_ID1}" \
-        | python3 - <<EOF
-import sys, json, base64, ssl, urllib.request, urllib.parse
-paths = json.load(sys.stdin)
-host       = "${HITACHI_HOST}"
-storage_id = "${STORAGE_ID}"
-user       = "${HITACHI_USER}"
-pwd        = "${HITACHI_PASS}"
-creds = base64.b64encode(f'{user}:{pwd}'.encode()).decode()
-headers = {'Authorization': f'Basic {creds}', 'Accept': 'application/json'}
-ctx = ssl.create_default_context(); ctx.check_hostname = False
-import ssl as _ssl; ctx.verify_mode = _ssl.CERT_NONE
-for m in paths:
-    if m.get('hostGroupName') == "${HG_1_1_NAME}":
-        lun_id = m.get('lunId', '')
-        url = (f'https://{host}/ConfigurationManager/v1/'
-               f'objects/storages/{storage_id}/luns/{urllib.parse.quote(lun_id, safe="")}')
-        req = urllib.request.Request(url, method='DELETE', headers=headers)
-        urllib.request.urlopen(req, context=ctx)
-        print(f'Deleted {lun_id}')
-EOF
+    _delete_hg_paths_for_ldev "${LDEV_ID1}" "${HG_1_1_NAME}"
     echo "Done."
     assert_hv_not_hgroup "HG_1_1 paths removed" "${LDEV_ID1}" "${HG_1_1_NAME}"
     assert_hv_hgroup "HG_1_2 paths intact" "${LDEV_ID1}" "${HG_1_2_NAME}"
@@ -355,27 +365,7 @@ s3-inject() {
             | python3 -m json.tool
     done
     # Remove the correct (source) paths
-    _hv_lun_paths_for_ldev "${LDEV_ID1}" \
-        | python3 - <<'EOF'
-import sys, json, base64, ssl, urllib.request, urllib.parse
-paths = json.load(sys.stdin)
-host       = "${HITACHI_HOST}"
-storage_id = "${STORAGE_ID}"
-user       = "${HITACHI_USER}"
-pwd        = "${HITACHI_PASS}"
-creds = base64.b64encode(f'{user}:{pwd}'.encode()).decode()
-headers = {'Authorization': f'Basic {creds}', 'Accept': 'application/json'}
-ctx = ssl.create_default_context(); ctx.check_hostname = False
-import ssl as _ssl; ctx.verify_mode = _ssl.CERT_NONE
-for m in paths:
-    if m.get('hostGroupName') == "${HG_1_2_NAME}":
-        lun_id = m.get('lunId', '')
-        url = (f'https://{host}/ConfigurationManager/v1/'
-               f'objects/storages/{storage_id}/luns/{urllib.parse.quote(lun_id, safe="")}')
-        req = urllib.request.Request(url, method='DELETE', headers=headers)
-        urllib.request.urlopen(req, context=ctx)
-        print(f'Deleted {lun_id}')
-EOF
+    _delete_hg_paths_for_ldev "${LDEV_ID1}" "${HG_1_2_NAME}"
     echo "Done — only HG_1_1 (wrong) paths remain."
     assert_hv_hgroup     "wrong HG_1_1 present"  "${LDEV_ID1}" "${HG_1_1_NAME}"
     assert_hv_not_hgroup "correct HG_1_2 gone"   "${LDEV_ID1}" "${HG_1_2_NAME}"
@@ -388,27 +378,7 @@ s3-cleanup() {
             -d "{\"portId\": \"${port}\", \"hostGroupNumber\": ${HG_1_2_NUMBER}, \"ldevId\": ${LDEV_ID1}}" \
             | python3 -m json.tool
     done
-    _hv_lun_paths_for_ldev "${LDEV_ID1}" \
-        | python3 - <<'EOF'
-import sys, json, base64, ssl, urllib.request, urllib.parse
-paths = json.load(sys.stdin)
-host       = "${HITACHI_HOST}"
-storage_id = "${STORAGE_ID}"
-user       = "${HITACHI_USER}"
-pwd        = "${HITACHI_PASS}"
-creds = base64.b64encode(f'{user}:{pwd}'.encode()).decode()
-headers = {'Authorization': f'Basic {creds}', 'Accept': 'application/json'}
-ctx = ssl.create_default_context(); ctx.check_hostname = False
-import ssl as _ssl; ctx.verify_mode = _ssl.CERT_NONE
-for m in paths:
-    if m.get('hostGroupName') == "${HG_1_1_NAME}":
-        lun_id = m.get('lunId', '')
-        url = (f'https://{host}/ConfigurationManager/v1/'
-               f'objects/storages/{storage_id}/luns/{urllib.parse.quote(lun_id, safe="")}')
-        req = urllib.request.Request(url, method='DELETE', headers=headers)
-        urllib.request.urlopen(req, context=ctx)
-        print(f'Deleted {lun_id}')
-EOF
+    _delete_hg_paths_for_ldev "${LDEV_ID1}" "${HG_1_1_NAME}"
     echo "Done."
     assert_hv_hgroup     "HG_1_2 restored" "${LDEV_ID1}" "${HG_1_2_NAME}"
     assert_hv_not_hgroup "HG_1_1 removed"  "${LDEV_ID1}" "${HG_1_1_NAME}"
@@ -489,27 +459,7 @@ s6-inject() {
 
 s6-cleanup() {
     echo "=== S6: cleanup ==="
-    _hv_lun_paths_for_ldev "${LDEV_ID1}" \
-        | python3 - <<'EOF'
-import sys, json, base64, ssl, urllib.request, urllib.parse
-paths = json.load(sys.stdin)
-host       = "${HITACHI_HOST}"
-storage_id = "${STORAGE_ID}"
-user       = "${HITACHI_USER}"
-pwd        = "${HITACHI_PASS}"
-creds = base64.b64encode(f'{user}:{pwd}'.encode()).decode()
-headers = {'Authorization': f'Basic {creds}', 'Accept': 'application/json'}
-ctx = ssl.create_default_context(); ctx.check_hostname = False
-import ssl as _ssl; ctx.verify_mode = _ssl.CERT_NONE
-for m in paths:
-    if m.get('hostGroupName') == "${HG_1_1_NAME}":
-        lun_id = m.get('lunId', '')
-        url = (f'https://{host}/ConfigurationManager/v1/'
-               f'objects/storages/{storage_id}/luns/{urllib.parse.quote(lun_id, safe="")}')
-        req = urllib.request.Request(url, method='DELETE', headers=headers)
-        urllib.request.urlopen(req, context=ctx)
-        print(f'Deleted {lun_id}')
-EOF
+    _delete_hg_paths_for_ldev "${LDEV_ID1}" "${HG_1_1_NAME}"
     echo "Done."
     assert_hv_not_hgroup "LDEV1 HG_1_1 removed" "${LDEV_ID1}" "${HG_1_1_NAME}"
 }
@@ -561,27 +511,7 @@ _ssh_host() {
 
 s8-inject() {
     echo "=== S8: inject — remove HG_1_2 LU paths for LDEV1 to orphan mpath on ${HOST_1_2} ==="
-    _hv_lun_paths_for_ldev "${LDEV_ID1}" \
-        | python3 - <<'EOF'
-import sys, json, base64, ssl, urllib.request, urllib.parse
-paths = json.load(sys.stdin)
-host       = "${HITACHI_HOST}"
-storage_id = "${STORAGE_ID}"
-user       = "${HITACHI_USER}"
-pwd        = "${HITACHI_PASS}"
-creds = base64.b64encode(f'{user}:{pwd}'.encode()).decode()
-headers = {'Authorization': f'Basic {creds}', 'Accept': 'application/json'}
-ctx = ssl.create_default_context(); ctx.check_hostname = False
-import ssl as _ssl; ctx.verify_mode = _ssl.CERT_NONE
-for m in paths:
-    if m.get('hostGroupName') == "${HG_1_2_NAME}":
-        lun_id = m.get('lunId', '')
-        url = (f'https://{host}/ConfigurationManager/v1/'
-               f'objects/storages/{storage_id}/luns/{urllib.parse.quote(lun_id, safe="")}')
-        req = urllib.request.Request(url, method='DELETE', headers=headers)
-        urllib.request.urlopen(req, context=ctx)
-        print(f'Deleted {lun_id}')
-EOF
+    _delete_hg_paths_for_ldev "${LDEV_ID1}" "${HG_1_2_NAME}"
     echo "Paths removed. Polling up to 60s for paths to go failed on ${HOST_1_2}..."
     local deadline=$(($(date +%s) + 60))
     while [ "$(date +%s)" -lt "$deadline" ]; do
