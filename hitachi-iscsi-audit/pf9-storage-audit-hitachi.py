@@ -357,12 +357,16 @@ def get_lun_paths(host, user, password, storage_id, host_groups):
     return result
 
 
-def find_ldev_for_volume(volume_id, provider_location, ldev_label_map):
+def find_ldev_for_volume(volume_id, provider_location, ldev_label_map, manual_ldevs=None):
     """Find LDEV ID (int) for a Cinder volume.
 
-    Primary: provider_location holds the decimal LDEV ID (set by Hitachi Cinder driver).
-    Fallback: search ldev_label_map for volume_id in LDEV label.
+    Priority order:
+      1. --volume-ldev override (when provider_location not visible without admin scope)
+      2. provider_location (decimal LDEV ID written by Hitachi Cinder driver)
+      3. LDEV label search (fallback — requires driver to embed volume UUID in label)
     """
+    if manual_ldevs and volume_id in manual_ldevs:
+        return manual_ldevs[volume_id]
     if provider_location:
         try:
             return int(str(provider_location).strip())
@@ -647,7 +651,7 @@ def find_hg_for_host(nova_host, host_iqn_map, host_groups):
 
 # ── Detection ──────────────────────────────────────────────────────────────
 
-def _fetch_server_items(server, hyp_map, host_groups, lun_paths, ldev_label_map):
+def _fetch_server_items(server, hyp_map, host_groups, lun_paths, ldev_label_map, manual_ldevs=None):
     """Fetch volume/attachment data for one server. Runs in a worker thread."""
     nova_host = hyp_map.get(server["host"], server["host"])
     if not nova_host:
@@ -672,7 +676,7 @@ def _fetch_server_items(server, hyp_map, host_groups, lun_paths, ldev_label_map)
                 break
 
         provider_location = vol.get("provider_location", "")
-        ldev_id = find_ldev_for_volume(volume_id, provider_location, ldev_label_map)
+        ldev_id = find_ldev_for_volume(volume_id, provider_location, ldev_label_map, manual_ldevs)
         lun_maps_for_ldev = lun_paths.get(ldev_id, []) if ldev_id is not None else []
 
         items.append({
@@ -733,7 +737,7 @@ def _classify_lun_maps(lun_maps, host_groups, nova_host, host_iqn_map):
 
 
 def detect(servers, hitachi_host, hitachi_user, hitachi_password, storage_id,
-           ssh_user=None, ssh_key=None, hyp_ip_map=None, manual_iqns=None):
+           ssh_user=None, ssh_key=None, hyp_ip_map=None, manual_iqns=None, manual_ldevs=None):
     print("\nQuerying Hitachi VSP...")
     port_ids = get_iscsi_ports(hitachi_host, hitachi_user, hitachi_password, storage_id)
     if not port_ids:
@@ -763,7 +767,7 @@ def detect(servers, hitachi_host, hitachi_user, hitachi_password, storage_id,
     collected = []
     with ThreadPoolExecutor(max_workers=8) as pool:
         futures = {
-            pool.submit(_fetch_server_items, s, hyp_map, host_groups, lun_paths, ldev_label_map): s
+            pool.submit(_fetch_server_items, s, hyp_map, host_groups, lun_paths, ldev_label_map, manual_ldevs): s
             for s in servers
         }
         done = 0
@@ -1093,6 +1097,9 @@ def main():
                         help="SSH private key file (optional if default key works)")
     parser.add_argument("--host-iqn",          action="append", default=[], metavar="HOST=IQN",
                         help="Known IQN for a compute host, e.g. compute-1=iqn.xxx. Repeat per host.")
+    parser.add_argument("--volume-ldev",       action="append", default=[], metavar="UUID=LDEV_ID",
+                        help="Override LDEV ID for a Cinder volume when provider_location is not "
+                             "visible, e.g. <volume-uuid>=105. Repeat per volume.")
     parser.add_argument("--dry-run",           action="store_true",
                         help="Preview all remediation steps without making changes")
     parser.add_argument("--remediate",         action="store_true",
@@ -1109,6 +1116,18 @@ def main():
             sys.exit(1)
         h, iqn = entry.split("=", 1)
         manual_iqns[h.strip()] = iqn.strip()
+
+    manual_ldevs = {}
+    for entry in args.volume_ldev:
+        if "=" not in entry:
+            print(f"[ERROR] --volume-ldev must be UUID=LDEV_ID format, got: {entry}", file=sys.stderr)
+            sys.exit(1)
+        vol_uuid, ldev_str = entry.split("=", 1)
+        try:
+            manual_ldevs[vol_uuid.strip()] = int(ldev_str.strip())
+        except ValueError:
+            print(f"[ERROR] --volume-ldev LDEV_ID must be an integer, got: {ldev_str}", file=sys.stderr)
+            sys.exit(1)
 
     if not args.hitachi_password:
         args.hitachi_password = getpass.getpass(
@@ -1129,6 +1148,7 @@ def main():
         servers, args.hitachi_host, args.hitachi_user, args.hitachi_password, storage_id,
         ssh_user=args.ssh_user, ssh_key=args.ssh_key, hyp_ip_map=hyp_ip_map,
         manual_iqns=manual_iqns or None,
+        manual_ldevs=manual_ldevs or None,
     )
 
     if args.ssh_user and all_nova_hosts:

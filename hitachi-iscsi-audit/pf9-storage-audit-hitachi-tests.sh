@@ -71,13 +71,15 @@ hv() {
 # ── Audit script wrapper ──────────────────────────────────────────────────────
 audit() {
     $SCRIPT \
-        --hitachi-host     "$HITACHI_HOST" \
-        --hitachi-user     "$HITACHI_USER" \
-        --hitachi-password "$HITACHI_PASS" \
+        --hitachi-host      "$HITACHI_HOST" \
+        --hitachi-user      "$HITACHI_USER" \
+        --hitachi-password  "$HITACHI_PASS" \
         --storage-device-id "$STORAGE_ID" \
-        --host-iqn         "${HOST_00_1}=${IQN_00_1}" \
-        --host-iqn         "${HOST_01}=${IQN_01}" \
-        --ssh-user root    --ssh-key "$SSH_KEY" \
+        --host-iqn          "${HOST_00_1}=${IQN_00_1}" \
+        --host-iqn          "${HOST_01}=${IQN_01}" \
+        --volume-ldev       "${TEST_VOL1}=${LDEV_ID1}" \
+        --volume-ldev       "${TEST_VOL2}=${LDEV_ID2}" \
+        --ssh-user root     --ssh-key "$SSH_KEY" \
         "$@"
 }
 
