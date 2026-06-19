@@ -625,27 +625,37 @@ def hostname_matches_iqn(hostname, iqn):
     return hostname.split(".")[0].lower() in iqn_to_hostname(iqn)
 
 
-def find_hg_for_host(nova_host, host_iqn_map, host_groups):
-    """Return (hg_name, hg_data) whose initiators match nova_host, or (None, None).
+def find_hg_for_host(nova_host, host_iqn_map, host_groups, host_hg_map=None):
+    """Return (hg_name, hg_data) for nova_host's host group, or (None, None).
 
-    Warns if multiple host groups share the same host IQN.
+    Match priority:
+      1. IQN-based: hg_iqns intersects the host's known IQNs (works when iscsi-names
+         API is populated, e.g. non-HBSD deployments).
+      2. IP-in-name: host group name contains the host's management IP (HBSD naming
+         convention: HBSD-<ip>).  Uses host_hg_map built from hypervisor list.
     """
     nova_s     = nova_host.split(".")[0].lower()
     known_iqns = host_iqn_map.get(nova_s, set())
-    if not known_iqns:
-        return None, None
-    matches = [
-        (name, data) for name, data in host_groups.items()
-        if known_iqns & data.get("iqns", set())
-    ]
-    if len(matches) > 1:
-        names = ", ".join(n for n, _ in matches)
-        print(f"  [WARN] {nova_s}: multiple host groups share the same IQN — {names}",
-              file=sys.stderr)
-        print(f"         Using '{matches[0][0]}' (first match). Verify this is correct.",
-              file=sys.stderr)
-    if matches:
-        return matches[0]
+
+    if known_iqns:
+        matches = [
+            (name, data) for name, data in host_groups.items()
+            if known_iqns & data.get("iqns", set())
+        ]
+        if len(matches) > 1:
+            names = ", ".join(n for n, _ in matches)
+            print(f"  [WARN] {nova_s}: multiple host groups share the same IQN — {names}",
+                  file=sys.stderr)
+            print(f"         Using '{matches[0][0]}' (first match). Verify this is correct.",
+                  file=sys.stderr)
+        if matches:
+            return matches[0]
+
+    if host_hg_map and nova_s in host_hg_map:
+        hg_name = host_hg_map[nova_s]
+        if hg_name in host_groups:
+            return hg_name, host_groups[hg_name]
+
     return None, None
 
 
