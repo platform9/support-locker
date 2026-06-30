@@ -400,7 +400,17 @@ def remove_lun_path_entry(host, user, password, storage_id, lun_id, hg_name, dry
         if e.code == 404:
             print("    Done (mapping was already absent).")
             return True
-        print(f"    [ERROR] {e.code}: {body}", file=sys.stderr)
+        # KART40014-E: "object ID in URL incorrect or empty" — Hitachi returns this
+        # for phantom records: visible in GET but already removed internally.
+        err_body = {}
+        try:
+            err_body = json.loads(body)
+        except Exception:
+            pass
+        if err_body.get("messageId") == "KART40014-E":
+            print("    Done (phantom record — internal Hitachi state already clean).")
+            return True
+        print(f"    [ERROR] HTTP {e.code}: {body}", file=sys.stderr)
         return False
     except urllib.error.URLError as e:
         print(f"    [ERROR] Network error: {e.reason}", file=sys.stderr)

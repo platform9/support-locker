@@ -478,7 +478,9 @@ s2-inject() {
         hv "objects/storages/${STORAGE_ID}/luns" -X POST \
             -d "{\"portId\": \"${port}\", \"hostGroupNumber\": ${hg_num}, \"ldevId\": ${LDEV_ID1}}" \
             | python3 -m json.tool
+        sleep 3  # Hitachi holds a resource lock between consecutive LU path writes
     done
+    _hv_wait_jobs  # ensure all async LU path create jobs have completed
     echo ""
     assert_hv_hgroup "stale HG_1_1 now present" "${LDEV_ID1}" "${HG_1_1_NAME}"
     assert_hv_hgroup "correct HG_1_2 still present" "${LDEV_ID1}" "${HG_1_2_NAME}"
@@ -512,6 +514,7 @@ s2() {
     out=$(audit --server "$TEST_VM" --remediate 2>&1) || true
     echo "$out"
     check_output "remediate removes stale paths" "Hitachi: remove LU path.*${HG_1_1_NAME}" "$out"
+    sleep 5  # let Hitachi propagate LU path deletion before querying
     assert_hv_not_hgroup "HG_1_1 removed after remediate" "${LDEV_ID1}" "${HG_1_1_NAME}"
     assert_hv_hgroup "HG_1_2 intact after remediate" "${LDEV_ID1}" "${HG_1_2_NAME}"
 
