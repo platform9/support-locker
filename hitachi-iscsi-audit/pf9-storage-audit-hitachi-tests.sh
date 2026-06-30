@@ -20,14 +20,30 @@ HOST_00_1="pf9-n01"   # 192.168.177.210  UUID: 23c18f6c-0034-4c8e-999f-ef3ccec73
 HOST_01="pf9-n02"     # 192.168.177.211  UUID: 3bc01cac-67f5-4809-8987-df887199d731
 HOST_1_2="$HOST_00_1"    # host the test VM runs on — sanya-vm-2 is on pf9-n01
 
-HOST_1_2_IP=$(openstack hypervisor list --long -f json 2>/dev/null \
-    | python3 -c "
+# IPs are stable; use them directly rather than resolving from the hypervisor list.
+HOST_00_1_IP="192.168.177.210"
+HOST_01_IP="192.168.177.211"
+HOST_1_2_IP="$HOST_00_1_IP"
+
+# In PF9, Nova may expose a service UUID as the hypervisor hostname instead of the
+# short name. Resolve by Host IP so --host-iqn keys match what the audit script
+# sees as nova_host after get_hypervisor_name_map().
+_nova_hostname_for_ip() {
+    local ip="$1" fallback="$2"
+    openstack hypervisor list --long -f json 2>/dev/null \
+        | python3 -c "
 import sys, json
 hvs = json.load(sys.stdin)
-match = next((h.get('Host IP', h.get('host_ip', '')) for h in hvs
-              if h.get('Hypervisor Hostname', '').startswith('${HOST_1_2}')), '')
-print(match)
-" 2>/dev/null) || HOST_1_2_IP=""
+match = next((h.get('Hypervisor Hostname', h.get('hypervisor_hostname', ''))
+              for h in hvs
+              if h.get('Host IP', h.get('host_ip', '')) == '$ip'), '')
+print(match or '$fallback')
+" 2>/dev/null || echo "$fallback"
+}
+
+HOST_00_1_NOVA=$(_nova_hostname_for_ip "$HOST_00_1_IP" "$HOST_00_1")
+HOST_01_NOVA=$(_nova_hostname_for_ip "$HOST_01_IP" "$HOST_01")
+HOST_1_2_NOVA="$HOST_00_1_NOVA"
 
 # ── Confirmed IQNs (fill in after running: cat /etc/iscsi/initiatorname.iscsi) ─
 IQN_00_1="iqn.2016-04.com.open-iscsi:153148eab825"   # pf9-n01
@@ -75,8 +91,8 @@ audit() {
         --hitachi-user      "$HITACHI_USER" \
         --hitachi-password  "$HITACHI_PASS" \
         --storage-device-id "$STORAGE_ID" \
-        --host-iqn          "${HOST_00_1}=${IQN_00_1}" \
-        --host-iqn          "${HOST_01}=${IQN_01}" \
+        --host-iqn          "${HOST_00_1_NOVA}=${IQN_00_1}" \
+        --host-iqn          "${HOST_01_NOVA}=${IQN_01}" \
         --volume-ldev       "${TEST_VOL1}=${LDEV_ID1}" \
         --volume-ldev       "${TEST_VOL2}=${LDEV_ID2}" \
         --ssh-user root     --ssh-key "$SSH_KEY" \
@@ -169,14 +185,43 @@ creds = base64.b64encode(f'{user}:{pwd}'.encode()).decode()
 headers = {'Authorization': f'Basic {creds}', 'Accept': 'application/json'}
 ctx = ssl.create_default_context(); ctx.check_hostname = False
 import ssl as _ssl; ctx.verify_mode = _ssl.CERT_NONE
+import time
+
+def wait_job(job_id, timeout=30):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        resp = json.loads(urllib.request.urlopen(
+            urllib.request.Request(
+                f'https://{host}/ConfigurationManager/v1/objects/storages/{storage_id}/jobs/{job_id}',
+                headers=headers), context=ctx, timeout=10).read())
+        status = resp.get('status', '')
+        if status == 'Completed':
+            return True
+        if status == 'Failed':
+            print(f'[WARN] Job {job_id} failed: {resp.get("error", {})}', file=sys.stderr)
+            return False
+        time.sleep(2)
+    print(f'[WARN] Job {job_id} timed out after {timeout}s', file=sys.stderr)
+    return False
+
 for m in paths:
     if m.get('hostGroupName') == hg_name:
         lun_id = m.get('lunId', '')
         url = (f'https://{host}/ConfigurationManager/v1/'
                f'objects/storages/{storage_id}/luns/{urllib.parse.quote(lun_id, safe="")}')
         req = urllib.request.Request(url, method='DELETE', headers=headers)
-        urllib.request.urlopen(req, context=ctx)
-        print(f'Deleted {lun_id}')
+        try:
+            raw  = urllib.request.urlopen(req, context=ctx).read()
+            resp = json.loads(raw) if raw else {}
+            if resp.get('jobId'):
+                wait_job(resp['jobId'])
+            print(f'Deleted {lun_id}')
+        except urllib.error.HTTPError as e:
+            body = e.read().decode()
+            if e.code == 404:
+                print(f'Already gone: {lun_id}')
+            else:
+                print(f'[WARN] DELETE {lun_id} → HTTP {e.code}: {body}', file=sys.stderr)
 EOF
 }
 
