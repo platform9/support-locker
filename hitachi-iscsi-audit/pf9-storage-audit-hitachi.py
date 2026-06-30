@@ -352,7 +352,8 @@ def get_lun_paths(host, user, password, storage_id, host_groups):
                     "hg_number": p.get("hostGroupNumber", hg_number),
                     "port_id":   p.get("portId", port_id),
                     "lun":       p.get("lun"),
-                    "lun_id":    p.get("lunId", ""),
+                    # Construct from decimal fields; lunId field may use hex notation
+                    "lun_id":    f"{p.get('portId', port_id)},{p.get('hostGroupNumber', hg_number)},{p.get('lun', 0)}",
                 })
     return result
 

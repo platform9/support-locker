@@ -174,6 +174,9 @@ for port in ports:
         for m in luns.get('data', []):
             if m.get('ldevId') == ldev_id:
                 m['hostGroupName'] = hg_name  # /luns omits this field; inject from host-groups
+                # Ensure portId/hostGroupNumber are present in decimal for DELETE URL construction
+                m.setdefault('portId', port)
+                m.setdefault('hostGroupNumber', hg_num)
                 all_paths.append(m)
 print(json.dumps(all_paths))
 EOF
@@ -219,7 +222,8 @@ def wait_job(job_id, timeout=30):
 
 for m in paths:
     if m.get('hostGroupName') == hg_name:
-        lun_id = m.get('lunId', '')
+        # Construct ID from decimal components — lunId field may use hex notation
+        lun_id = f"{m.get('portId','')},{m.get('hostGroupNumber','')},{m.get('lun',0)}"
         url = (f'https://{host}/ConfigurationManager/v1/'
                f'objects/storages/{storage_id}/luns/{urllib.parse.quote(lun_id, safe="")}')
         req = urllib.request.Request(url, method='DELETE', headers=headers)
