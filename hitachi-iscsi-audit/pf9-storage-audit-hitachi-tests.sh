@@ -82,18 +82,43 @@ print(' '.join(ports))
 [ -z "$ISCSI_PORTS" ] && { echo "[ERROR] No iSCSI ports found on storage ${STORAGE_ID}." >&2; exit 1; }
 echo "  Discovered: storage=${STORAGE_ID}  ports=${ISCSI_PORTS}" >&2
 
-HG_1_2_NAME="HBSD-192.168.177.210"  # host group name for HOST_1_2 (pf9-n01)
-HG_1_1_NAME="HBSD-192.168.177.211"  # host group name for HOST_00_1 (pf9-n02)
-HG_1_2_NUMBER=6                      # host group number on CL1-D (5 on CL2-D)
-HG_1_1_NUMBER=8                      # host group number on CL1-D (7 on CL2-D)
+# Host group names follow HBSD naming convention: HBSD-<hypervisor_ip>
+HG_1_2_NAME="HBSD-${HOST_00_1_IP}"  # host group name for HOST_1_2 (pf9-n01)
+HG_1_1_NAME="HBSD-${HOST_01_IP}"    # host group name for HOST_00_1 (pf9-n02)
 
-LDEV_ID1=105                     # decimal LDEV ID for TEST_VOL1 (sanya-vm-bootvol)
-LDEV_ID2=129                     # decimal LDEV ID for TEST_VOL2 (sanya-vm-2-bootvol)
+# ── Auto-discover LDEV IDs from OpenStack volume provider_location ────────────
+# HBSD Cinder driver stores the decimal LDEV ID in provider_location.
+_ldev_for_volume() {
+    local vol_uuid="$1"
+    # Try OpenStack provider_location first (fastest)
+    local pl
+    pl=$(openstack volume show "$vol_uuid" -f json 2>/dev/null | python3 -c "
+import sys, json
+vol = json.load(sys.stdin)
+pl = (vol.get('provider_location') or '').strip()
+if not pl: sys.exit(1)
+# HBSD stores decimal or '0x<hex>' LDEV ID
+print(int(pl, 16) if pl.startswith('0x') else int(pl))
+" 2>/dev/null) && { echo "$pl"; return; }
 
-# Existing LU path IDs for vol1 on the correct host group (portId,hg_number,lun).
-# Used in cleanup when auto-removal fails.
-LUN_ID_VOL1_PORT1="CL1-D,6,0"
-LUN_ID_VOL1_PORT2="CL2-D,5,0"
+    # Fallback: scan Hitachi ldevs — HBSD labels each LDEV with the volume UUID
+    hv "objects/storages/${STORAGE_ID}/ldevs?count=1000&headLdevId=0&ldevOption=dpVolume" \
+        | python3 -c "
+import sys, json
+vol_uuid = '${vol_uuid}'.lower()
+data = json.load(sys.stdin).get('data', [])
+match = next((l['ldevId'] for l in data if l.get('label','').lower() == vol_uuid), None)
+if match is None: sys.exit(1)
+print(match)
+" 2>/dev/null
+}
+
+LDEV_ID1=$(_ldev_for_volume "${TEST_VOL1}") \
+    || { echo "[ERROR] Cannot find LDEV for TEST_VOL1 ${TEST_VOL1} — check volume exists and backend is Hitachi" >&2; exit 1; }
+LDEV_ID2=$(_ldev_for_volume "${TEST_VOL2}") \
+    || { echo "[ERROR] Cannot find LDEV for TEST_VOL2 ${TEST_VOL2} — check volume exists and backend is Hitachi" >&2; exit 1; }
+echo "  Discovered: LDEV_ID1=${LDEV_ID1} (${TEST_VOL1})" >&2
+echo "  Discovered: LDEV_ID2=${LDEV_ID2} (${TEST_VOL2})" >&2
 
 SVM=""  # Not used for Hitachi; kept as placeholder for script parity
 
@@ -122,6 +147,20 @@ check_output() {
     else
         fail "$label — pattern not found: $pattern"
     fi
+}
+
+# ── Hitachi REST helper: look up host group number on a port by name ─────────
+# Returns the integer hostGroupNumber, or exits 1 (and emits a message) if not found.
+_hv_hg_num_for_port() {
+    local port="$1" hg_name="$2"
+    hv "objects/storages/${STORAGE_ID}/host-groups?portId=${port}" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+match = next((r['hostGroupNumber'] for r in data.get('data', [])
+              if r.get('hostGroupName') == sys.argv[1]), None)
+if match is None: sys.exit(1)
+print(match)
+" "$hg_name" 2>/dev/null
 }
 
 # ── Hitachi state assertion helpers ──────────────────────────────────────────
@@ -222,7 +261,6 @@ def wait_job(job_id, timeout=30):
 
 for m in paths:
     if m.get('hostGroupName') == hg_name:
-        print(f'[DEBUG] raw path dict: {json.dumps(m)}', file=sys.stderr)
         # Construct ID from decimal components — lunId field may use hex notation
         lun_id = f"{m.get('portId','')},{m.get('hostGroupNumber','')},{m.get('lun',0)}"
         url = (f'https://{host}/ConfigurationManager/v1/'
@@ -236,8 +274,13 @@ for m in paths:
             print(f'Deleted {lun_id}')
         except urllib.error.HTTPError as e:
             body = e.read().decode()
-            if e.code == 404:
-                print(f'Already gone: {lun_id}')
+            err_body = {}
+            try: err_body = json.loads(body)
+            except: pass
+            # 404 or KART40014-E both mean the path doesn't exist (phantom records
+            # left by failed inject cycles appear in GET but can't be deleted)
+            if e.code == 404 or err_body.get('messageId') == 'KART40014-E':
+                print(f'Already gone (phantom): {lun_id}')
             else:
                 print(f'[WARN] DELETE {lun_id} → HTTP {e.code}: {body}', file=sys.stderr)
 EOF
@@ -323,15 +366,11 @@ else:
 " || true
 
     echo ""
-    echo "Fill in at the top of this script:"
-    echo "  STORAGE_ID      — from 'Storage devices' above"
-    echo "  ISCSI_PORT1/2   — port IDs from 'iSCSI ports' above"
-    echo "  HG_1_2_NAME     — hostGroupName for ${HOST_1_2}"
-    echo "  HG_1_1_NAME     — hostGroupName for ${HOST_00_1}"
-    echo "  HG_1_2_NUMBER   — hostGroupNumber for HG_1_2"
-    echo "  HG_1_1_NUMBER   — hostGroupNumber for HG_1_1"
-    echo "  LDEV_ID1/2      — decimal ldevId from provider_location or LU paths above"
-    echo "  LUN_ID_VOL1_*   — lunId values from LU paths for vol1"
+    echo "All values are auto-discovered at startup — no manual fill-in required."
+    echo "  STORAGE_ID=${STORAGE_ID}  ISCSI_PORTS=${ISCSI_PORTS}"
+    echo "  HG_1_2_NAME=${HG_1_2_NAME}  HG_1_1_NAME=${HG_1_1_NAME}"
+    echo "  LDEV_ID1=${LDEV_ID1} (${TEST_VOL1})"
+    echo "  LDEV_ID2=${LDEV_ID2} (${TEST_VOL2})"
 
     echo ""
     echo "=== Validating variables against Hitachi ==="
@@ -383,14 +422,8 @@ s1() {
 s2-inject() {
     echo "=== S2: inject DUAL HOST GROUP (adding HG_1_1 paths for LDEV1) ==="
     for port in $ISCSI_PORTS; do
-        hg_num=$( hv "objects/storages/${STORAGE_ID}/host-groups?portId=${port}" \
-            | python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-match = next((r['hostGroupNumber'] for r in d.get('data', [])
-              if r.get('hostGroupName') == '${HG_1_1_NAME}'), None)
-print(match if match is not None else '${HG_1_1_NUMBER}')
-" 2>/dev/null || echo "${HG_1_1_NUMBER}" )
+        hg_num=$(_hv_hg_num_for_port "$port" "${HG_1_1_NAME}") \
+            || { echo "[INFO] ${HG_1_1_NAME} not on ${port}, skipping" >&2; continue; }
         hv "objects/storages/${STORAGE_ID}/luns" -X POST \
             -d "{\"portId\": \"${port}\", \"hostGroupNumber\": ${hg_num}, \"ldevId\": ${LDEV_ID1}}" \
             | python3 -m json.tool
@@ -442,8 +475,10 @@ s2() {
 s3-inject() {
     echo "=== S3: inject — add HG_1_1 paths, remove HG_1_2 paths for LDEV1 ==="
     for port in $ISCSI_PORTS; do
+        hg_num=$(_hv_hg_num_for_port "$port" "${HG_1_1_NAME}") \
+            || { echo "[INFO] ${HG_1_1_NAME} not on ${port}, skipping" >&2; continue; }
         hv "objects/storages/${STORAGE_ID}/luns" -X POST \
-            -d "{\"portId\": \"${port}\", \"hostGroupNumber\": ${HG_1_1_NUMBER}, \"ldevId\": ${LDEV_ID1}}" \
+            -d "{\"portId\": \"${port}\", \"hostGroupNumber\": ${hg_num}, \"ldevId\": ${LDEV_ID1}}" \
             | python3 -m json.tool
     done
     _hv_wait_jobs  # wait for async LU path create jobs before deleting source paths
@@ -457,8 +492,10 @@ s3-inject() {
 s3-cleanup() {
     echo "=== S3: cleanup — restore HG_1_2 paths, remove HG_1_1 paths ==="
     for port in $ISCSI_PORTS; do
+        hg_num=$(_hv_hg_num_for_port "$port" "${HG_1_2_NAME}") \
+            || { echo "[INFO] ${HG_1_2_NAME} not on ${port}, skipping" >&2; continue; }
         hv "objects/storages/${STORAGE_ID}/luns" -X POST \
-            -d "{\"portId\": \"${port}\", \"hostGroupNumber\": ${HG_1_2_NUMBER}, \"ldevId\": ${LDEV_ID1}}" \
+            -d "{\"portId\": \"${port}\", \"hostGroupNumber\": ${hg_num}, \"ldevId\": ${LDEV_ID1}}" \
             | python3 -m json.tool
     done
     _delete_hg_paths_for_ldev "${LDEV_ID1}" "${HG_1_1_NAME}"
@@ -532,8 +569,10 @@ s5() {
 s6-inject() {
     echo "=== S6: inject DUAL HOST GROUP on LDEV1 only ==="
     for port in $ISCSI_PORTS; do
+        hg_num=$(_hv_hg_num_for_port "$port" "${HG_1_1_NAME}") \
+            || { echo "[INFO] ${HG_1_1_NAME} not on ${port}, skipping" >&2; continue; }
         hv "objects/storages/${STORAGE_ID}/luns" -X POST \
-            -d "{\"portId\": \"${port}\", \"hostGroupNumber\": ${HG_1_1_NUMBER}, \"ldevId\": ${LDEV_ID1}}" \
+            -d "{\"portId\": \"${port}\", \"hostGroupNumber\": ${hg_num}, \"ldevId\": ${LDEV_ID1}}" \
             | python3 -m json.tool
     done
     assert_hv_hgroup     "LDEV1 has stale HG_1_1 after inject"   "${LDEV_ID1}" "${HG_1_1_NAME}"
@@ -612,8 +651,10 @@ s8-inject() {
 s8-cleanup() {
     echo "=== S8: cleanup — restore HG_1_2 LU paths and rescan ==="
     for port in $ISCSI_PORTS; do
+        hg_num=$(_hv_hg_num_for_port "$port" "${HG_1_2_NAME}") \
+            || { echo "[INFO] ${HG_1_2_NAME} not on ${port}, skipping" >&2; continue; }
         hv "objects/storages/${STORAGE_ID}/luns" -X POST \
-            -d "{\"portId\": \"${port}\", \"hostGroupNumber\": ${HG_1_2_NUMBER}, \"ldevId\": ${LDEV_ID1}}" \
+            -d "{\"portId\": \"${port}\", \"hostGroupNumber\": ${hg_num}, \"ldevId\": ${LDEV_ID1}}" \
             | python3 -m json.tool
     done
     _ssh_host "iscsiadm -m session -R 2>/dev/null; multipath -r 2>/dev/null" || true
