@@ -56,11 +56,31 @@ TEST_VM="0fdc5091-a216-4462-9222-5cce0d4dcde5"      # sanya-vm-2 on pf9-n01
 TEST_VOL1="7718ffcf-276a-453c-a16a-53d05ad4276f"    # sanya-vm-bootvol
 TEST_VOL2="b2c392bc-eea4-4de4-8a59-a31c088a7a14"    # sanya-vm-2-bootvol
 
-# ── Fill these in after running: ./pf9-storage-audit-hitachi-tests.sh setup ──
-STORAGE_ID="938000745751"
-ISCSI_PORT1="CL1-D"
-ISCSI_PORT2="CL2-D"
-ISCSI_PORTS="${ISCSI_PORT1} ${ISCSI_PORT2}"
+# ── Hitachi REST helper ───────────────────────────────────────────────────────
+# Defined early so auto-discovery below can use it.
+hv() {
+    curl -sk -u "${HITACHI_USER}:${HITACHI_PASS}" \
+         -H "Accept: application/json" -H "Content-Type: application/json" \
+         "https://${HITACHI_HOST}/ConfigurationManager/v1/$1" "${@:2}"
+}
+
+# ── Auto-discover storage device ID and iSCSI ports ──────────────────────────
+STORAGE_ID=$(hv "objects/storages" \
+    | python3 -c "
+import sys, json
+devs = json.load(sys.stdin).get('data', [])
+if not devs: sys.exit(1)
+print(devs[0]['storageDeviceId'])
+" 2>/dev/null) || { echo "[ERROR] Cannot reach Hitachi — check HITACHI_HOST and credentials." >&2; exit 1; }
+
+ISCSI_PORTS=$(hv "objects/storages/${STORAGE_ID}/ports" \
+    | python3 -c "
+import sys, json
+ports = [p['portId'] for p in json.load(sys.stdin).get('data', []) if p.get('portType') == 'ISCSI']
+print(' '.join(ports))
+" 2>/dev/null)
+[ -z "$ISCSI_PORTS" ] && { echo "[ERROR] No iSCSI ports found on storage ${STORAGE_ID}." >&2; exit 1; }
+echo "  Discovered: storage=${STORAGE_ID}  ports=${ISCSI_PORTS}" >&2
 
 HG_1_2_NAME="HBSD-192.168.177.210"  # host group name for HOST_1_2 (pf9-n01)
 HG_1_1_NAME="HBSD-192.168.177.211"  # host group name for HOST_00_1 (pf9-n02)
@@ -76,13 +96,6 @@ LUN_ID_VOL1_PORT1="CL1-D,6,0"
 LUN_ID_VOL1_PORT2="CL2-D,5,0"
 
 SVM=""  # Not used for Hitachi; kept as placeholder for script parity
-
-# ── Hitachi REST helper ───────────────────────────────────────────────────────
-hv() {
-    curl -sk -u "${HITACHI_USER}:${HITACHI_PASS}" \
-         -H "Accept: application/json" -H "Content-Type: application/json" \
-         "https://${HITACHI_HOST}/ConfigurationManager/v1/$1" "${@:2}"
-}
 
 # ── Audit script wrapper ──────────────────────────────────────────────────────
 audit() {
