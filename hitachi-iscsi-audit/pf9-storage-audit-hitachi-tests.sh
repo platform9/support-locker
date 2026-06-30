@@ -86,37 +86,88 @@ echo "  Discovered: storage=${STORAGE_ID}  ports=${ISCSI_PORTS}" >&2
 HG_1_2_NAME="HBSD-${HOST_00_1_IP}"  # host group name for HOST_1_2 (pf9-n01)
 HG_1_1_NAME="HBSD-${HOST_01_IP}"    # host group name for HOST_00_1 (pf9-n02)
 
-# ── Auto-discover LDEV IDs from OpenStack volume provider_location ────────────
-# HBSD Cinder driver stores the decimal LDEV ID in provider_location.
+# ── Auto-discover LDEV IDs ────────────────────────────────────────────────────
+# Priority:
+#   1. OpenStack provider_location  (decimal or 0x-prefixed hex LDEV ID)
+#   2. Hitachi individual-LDEV query for each LU path across all ports/HGs
+#      (bulk /ldevs listing omits the label field; individual /ldevs/{id} includes it)
+#
+# The label comparison strips dashes so it handles both "uuid-with-dashes" and
+# "uuidwithoutdashes" storage formats, and tolerates Hitachi's 32-char truncation.
 _ldev_for_volume() {
     local vol_uuid="$1"
-    # Try OpenStack provider_location first (fastest)
+
+    # 1. OpenStack provider_location
     local pl
     pl=$(openstack volume show "$vol_uuid" -f json 2>/dev/null | python3 -c "
 import sys, json
 vol = json.load(sys.stdin)
-pl = (vol.get('provider_location') or '').strip()
+pl = str(vol.get('provider_location') or '').strip()
 if not pl: sys.exit(1)
-# HBSD stores decimal or '0x<hex>' LDEV ID
-print(int(pl, 16) if pl.startswith('0x') else int(pl))
+try:
+    print(int(pl, 16) if pl.startswith('0x') else int(pl))
+except ValueError:
+    sys.exit(1)
 " 2>/dev/null) && { echo "$pl"; return; }
 
-    # Fallback: scan Hitachi ldevs — HBSD labels each LDEV with the volume UUID
-    hv "objects/storages/${STORAGE_ID}/ldevs?count=1000&headLdevId=0&ldevOption=dpVolume" \
-        | python3 -c "
+    # 2. Collect all unique LDEV IDs currently mapped in Hitachi, then query
+    #    each one individually (individual GET returns 'label'; bulk listing does not).
+    #    VSP E1090 requires portId+hostGroupNumber on /luns — enumerate all HGs per port.
+    local ldev_ids
+    ldev_ids=$(
+        for port in $ISCSI_PORTS; do
+            hv "objects/storages/${STORAGE_ID}/host-groups?portId=${port}" \
+                | python3 -c "
 import sys, json
-vol_uuid = '${vol_uuid}'.lower()
-data = json.load(sys.stdin).get('data', [])
-match = next((l['ldevId'] for l in data if l.get('label','').lower() == vol_uuid), None)
-if match is None: sys.exit(1)
-print(match)
+for hg in json.load(sys.stdin).get('data', []):
+    print(hg.get('hostGroupNumber', ''))
+" 2>/dev/null | while read -r hg_num; do
+                [ -z "$hg_num" ] && continue
+                hv "objects/storages/${STORAGE_ID}/luns?portId=${port}&hostGroupNumber=${hg_num}&count=1000" \
+                    | python3 -c "
+import sys, json
+for m in json.load(sys.stdin).get('data', []):
+    lid = m.get('ldevId')
+    if lid is not None:
+        print(lid)
 " 2>/dev/null
+            done
+        done | sort -un
+    )
+    [ -z "$ldev_ids" ] && return 1
+
+    local vol_clean
+    vol_clean=$(echo "$vol_uuid" | tr '[:upper:]' '[:lower:]' | tr -d '-')
+    for ldev_id in $ldev_ids; do
+        local found
+        found=$(hv "objects/storages/${STORAGE_ID}/ldevs/${ldev_id}" | python3 -c "
+import sys, json
+ldev = json.load(sys.stdin)
+label = ldev.get('label', '').lower().replace('-', '')
+vol_clean = '${vol_clean}'
+if label and vol_clean and (label == vol_clean or vol_clean.startswith(label) or label.startswith(vol_clean)):
+    print(ldev.get('ldevId', '${ldev_id}'))
+    sys.exit(0)
+sys.exit(1)
+" 2>/dev/null) && { echo "$found"; return; }
+    done
+    return 1
 }
 
-LDEV_ID1=$(_ldev_for_volume "${TEST_VOL1}") \
-    || { echo "[ERROR] Cannot find LDEV for TEST_VOL1 ${TEST_VOL1} — check volume exists and backend is Hitachi" >&2; exit 1; }
-LDEV_ID2=$(_ldev_for_volume "${TEST_VOL2}") \
-    || { echo "[ERROR] Cannot find LDEV for TEST_VOL2 ${TEST_VOL2} — check volume exists and backend is Hitachi" >&2; exit 1; }
+# Allow manual override via env vars when auto-discovery fails
+# (e.g. LDEV_ID1=105 LDEV_ID2=129 HITACHI_PASS=... ./script.sh s2)
+if [ -z "${LDEV_ID1:-}" ]; then
+    LDEV_ID1=$(_ldev_for_volume "${TEST_VOL1}") \
+        || { echo "[ERROR] Cannot find LDEV for TEST_VOL1 ${TEST_VOL1}." >&2
+             echo "        Set LDEV_ID1=<decimal_id> as an env var to bypass discovery." >&2
+             exit 1; }
+fi
+if [ -z "${LDEV_ID2:-}" ]; then
+    LDEV_ID2=$(_ldev_for_volume "${TEST_VOL2}") \
+        || { echo "[ERROR] Cannot find LDEV for TEST_VOL2 ${TEST_VOL2}." >&2
+             echo "        Set LDEV_ID2=<decimal_id> as an env var to bypass discovery." >&2
+             exit 1; }
+fi
 echo "  Discovered: LDEV_ID1=${LDEV_ID1} (${TEST_VOL1})" >&2
 echo "  Discovered: LDEV_ID2=${LDEV_ID2} (${TEST_VOL2})" >&2
 
