@@ -222,6 +222,7 @@ def wait_job(job_id, timeout=30):
 
 for m in paths:
     if m.get('hostGroupName') == hg_name:
+        print(f'[DEBUG] raw path dict: {json.dumps(m)}', file=sys.stderr)
         # Construct ID from decimal components — lunId field may use hex notation
         lun_id = f"{m.get('portId','')},{m.get('hostGroupNumber','')},{m.get('lun',0)}"
         url = (f'https://{host}/ConfigurationManager/v1/'
