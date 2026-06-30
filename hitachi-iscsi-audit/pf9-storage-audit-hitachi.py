@@ -702,15 +702,27 @@ def _fetch_server_items(server, hyp_map, host_groups, lun_paths, ldev_label_map,
     return items
 
 
-def _classify_lun_maps(lun_maps, host_groups, nova_host, host_iqn_map):
+def _classify_lun_maps(lun_maps, host_groups, nova_host, host_iqn_map, hyp_ip_map=None):
     """Split LU paths by host group name into nova / stale / unknown.
 
     Groups per-port entries by hg_name first: a single "host group identity"
     spans multiple ports, so we classify the name rather than individual ports.
     Each returned entry has a 'paths' list with all per-port LU path records.
+
+    Match priority:
+      1. IQN intersection (host_iqn_map ∩ hg_iqns)
+      2. HBSD naming convention: HBSD-{hypervisor_mgmt_ip} (used when Hitachi
+         host groups have no registered iSCSI initiator names, as is typical for
+         HBSD-driver deployments)
+      3. Hostname-in-IQN heuristic (non-Ubuntu IQNs only)
     """
     nova_s          = nova_host.split(".")[0].lower()
     known_nova_iqns = host_iqn_map.get(nova_s, set())
+
+    # HBSD naming fallback: HBSD-{nova_host_ip}
+    nova_ip        = (hyp_ip_map or {}).get(nova_host) or (hyp_ip_map or {}).get(nova_s, "")
+    nova_hbsd_name = f"HBSD-{nova_ip}" if nova_ip else ""
+
     nova_maps    = []
     stale_maps   = []
     unknown_maps = []
@@ -732,6 +744,10 @@ def _classify_lun_maps(lun_maps, host_groups, nova_host, host_iqn_map):
         if known_nova_iqns:
             if known_nova_iqns & hg_iqns:
                 nova_maps.append(enriched)
+            elif nova_hbsd_name and hg_name == nova_hbsd_name:
+                # IQN matching failed (no IQNs registered in HG — typical for HBSD);
+                # fall back to HBSD naming convention to identify the nova group
+                nova_maps.append(enriched)
             else:
                 stale_maps.append(enriched)
         else:
@@ -741,6 +757,8 @@ def _classify_lun_maps(lun_maps, host_groups, nova_host, host_iqn_map):
                     nova_maps.append(enriched)
                 else:
                     stale_maps.append(enriched)
+            elif nova_hbsd_name and hg_name == nova_hbsd_name:
+                nova_maps.append(enriched)
             else:
                 unknown_maps.append(enriched)
 
@@ -852,7 +870,7 @@ def detect(servers, hitachi_host, hitachi_user, hitachi_password, storage_id,
         lun_maps  = item["lun_maps"]
 
         nova_maps, stale_maps, unknown_maps = _classify_lun_maps(
-            lun_maps, host_groups, nova_host, host_iqn_map
+            lun_maps, host_groups, nova_host, host_iqn_map, hyp_ip_map=hyp_ip_map
         )
 
         dual_mapping   = bool(nova_maps and stale_maps)
