@@ -373,8 +373,10 @@ def find_ldev_for_volume(volume_id, provider_location, ldev_label_map, manual_ld
             return int(str(provider_location).strip())
         except ValueError:
             pass
+    vol_clean = volume_id.lower().replace("-", "")
     for ldev_id, ldev in ldev_label_map.items():
-        if volume_id in ldev.get("label", ""):
+        label = ldev.get("label", "").lower().replace("-", "")
+        if vol_clean and label and (vol_clean in label or label in vol_clean):
             return ldev_id
     return None
 
