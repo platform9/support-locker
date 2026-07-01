@@ -769,6 +769,9 @@ def _classify_lun_maps(lun_maps, host_groups, nova_host, host_iqn_map, hyp_ip_ma
                     stale_maps.append(enriched)
             elif nova_hbsd_name and hg_name == nova_hbsd_name:
                 nova_maps.append(enriched)
+            elif nova_hbsd_name and hg_name.startswith("HBSD-"):
+                # HBSD-named group belonging to a different host → stale
+                stale_maps.append(enriched)
             else:
                 unknown_maps.append(enriched)
 

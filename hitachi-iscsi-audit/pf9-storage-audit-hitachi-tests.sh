@@ -539,8 +539,10 @@ s3-inject() {
         hv "objects/storages/${STORAGE_ID}/luns" -X POST \
             -d "{\"portId\": \"${port}\", \"hostGroupNumber\": ${hg_num}, \"ldevId\": ${LDEV_ID1}}" \
             | python3 -m json.tool
+        sleep 3  # Hitachi holds a resource lock between consecutive LU path writes
     done
     _hv_wait_jobs  # wait for async LU path create jobs before deleting source paths
+    sleep 5  # give Hitachi time to release the LDEV lock after async job completion
     # Remove the correct (source) paths
     _delete_hg_paths_for_ldev "${LDEV_ID1}" "${HG_1_2_NAME}"
     echo "Done — only HG_1_1 (wrong) paths remain."
@@ -586,10 +588,12 @@ s3() {
     check_output "clean after remediate" "No host group mapping issues detected" "$out"
 }
 
-# ── Scenario 4: Ubuntu IQN warning (no --host-iqn) ───────────────────────────
+# ── Scenario 4: HBSD fallback detection without --host-iqn ───────────────────
+# Verifies that HBSD-named groups from a different host are classified as stale
+# even when no --host-iqn is provided (HBSD-<other-ip> → stale, not unknown).
 s4() {
     echo "════════════════════════════════════════════"
-    echo "SCENARIO 4 — Ubuntu IQN warning (no --host-iqn)"
+    echo "SCENARIO 4 — HBSD fallback (no --host-iqn)"
     echo "════════════════════════════════════════════"
     out=$($SCRIPT \
         --hitachi-host      "$HITACHI_HOST" \
@@ -598,7 +602,7 @@ s4() {
         --storage-device-id "$STORAGE_ID" \
         --server "$TEST_VM" 2>&1) || true
     echo "$out"
-    check_output "IQN warning shown" "host group check skipped|pass --host-iqn" "$out"
+    check_output "HBSD fallback detects dual mapping" "DUAL HOST GROUP" "$out"
 }
 
 # ── Scenario 5: Single VM mode ────────────────────────────────────────────────
