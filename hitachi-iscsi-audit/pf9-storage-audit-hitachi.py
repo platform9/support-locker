@@ -261,7 +261,6 @@ def _hv_mutate_ok(host, user, password, storage_id, resp):
 # ── Hitachi discovery ──────────────────────────────────────────────────────
 
 def get_storage_device_id(host, user, password):
-    """Auto-discover the first storage device ID from the VSP management host."""
     data    = _hv_get(host, user, password, "objects/storages")
     devices = data.get("data", [])
     if not devices:
@@ -277,7 +276,6 @@ def get_storage_device_id(host, user, password):
 
 
 def get_iscsi_ports(host, user, password, storage_id):
-    """Return list of iSCSI port IDs (e.g. ['CL1-A', 'CL2-A'])."""
     ports = _hv_get_all(host, user, password, f"objects/storages/{storage_id}/ports")
     ids   = [p["portId"] for p in ports if p.get("portType") == "ISCSI"]
     print(f"  iSCSI ports: {', '.join(ids) or '(none found)'}")
@@ -384,7 +382,6 @@ def find_ldev_for_volume(volume_id, provider_location, ldev_label_map, manual_ld
 # ── Hitachi write operations ───────────────────────────────────────────────
 
 def remove_lun_path_entry(host, user, password, storage_id, lun_id, hg_name, dry_run=False):
-    """DELETE one LU path (port + host-group mapping for an LDEV)."""
     label = "[DRY-RUN] " if dry_run else ""
     print(f"    {label}Hitachi: remove LU path {lun_id}  (host-group '{hg_name}')")
     if dry_run:
@@ -421,7 +418,6 @@ def remove_lun_path_entry(host, user, password, storage_id, lun_id, hg_name, dry
 
 def add_lun_path_entry(host, user, password, storage_id, port_id, hg_number, ldev_id, hg_name,
                        dry_run=False):
-    """POST to add one LU path (one port/host-group mapping for an LDEV)."""
     label = "[DRY-RUN] " if dry_run else ""
     print(f"    {label}Hitachi: add LU path  LDEV {ldev_id} → port {port_id} / hg {hg_number}"
           f"  ('{hg_name}')")
@@ -675,7 +671,6 @@ def find_hg_for_host(nova_host, host_iqn_map, host_groups, host_hg_map=None):
 # ── Detection ──────────────────────────────────────────────────────────────
 
 def _fetch_server_items(server, hyp_map, host_groups, lun_paths, ldev_label_map, manual_ldevs=None):
-    """Fetch volume/attachment data for one server. Runs in a worker thread."""
     nova_host = hyp_map.get(server["host"], server["host"])
     if not nova_host:
         return []
@@ -731,7 +726,6 @@ def _classify_lun_maps(lun_maps, host_groups, nova_host, host_iqn_map, hyp_ip_ma
     nova_s          = nova_host.split(".")[0].lower()
     known_nova_iqns = host_iqn_map.get(nova_s, set())
 
-    # HBSD naming fallback: HBSD-{nova_host_ip}
     nova_ip        = (hyp_ip_map or {}).get(nova_host) or (hyp_ip_map or {}).get(nova_s, "")
     nova_hbsd_name = f"HBSD-{nova_ip}" if nova_ip else ""
 
@@ -772,7 +766,6 @@ def _classify_lun_maps(lun_maps, host_groups, nova_host, host_iqn_map, hyp_ip_ma
             elif nova_hbsd_name and hg_name == nova_hbsd_name:
                 nova_maps.append(enriched)
             elif nova_hbsd_name and hg_name.startswith("HBSD-"):
-                # HBSD-named group belonging to a different host → stale
                 stale_maps.append(enriched)
             else:
                 unknown_maps.append(enriched)
@@ -824,7 +817,7 @@ def detect(servers, hitachi_host, hitachi_user, hitachi_password, storage_id,
             except Exception as exc:
                 print(f"  [WARN] {server['name']}: {exc}", file=sys.stderr)
 
-    # Pass 2b: manual --host-iqn entries (run first — authoritative, never overridden)
+    # --host-iqn entries are authoritative — process before inference so they're never overridden
     host_iqn_map = {}
     if manual_iqns:
         nova_shorts = {item["nova_host"].split(".")[0].lower() for item in collected}
@@ -838,10 +831,9 @@ def detect(servers, hitachi_host, hitachi_user, hitachi_password, storage_id,
                 print(f"  [WARN] --host-iqn: no host matched '{key}' (known: {', '.join(nova_shorts)})",
                       file=sys.stderr)
 
-    # Pass 2a: infer IQNs from clean (nova == cinder) attachments for hosts not
-    # covered by --host-iqn.  Skipped for covered hosts: a VM with a stale dual
-    # mapping would add the stale host's IQN into the nova host's set, causing
-    # _classify_lun_maps to treat the stale group as "correct" and miss the issue.
+    # Infer IQNs from clean (nova == cinder) attachments for hosts not covered by --host-iqn.
+    # Skipped for covered hosts: a VM with a stale dual mapping would add the stale host's
+    # IQN into the nova host's set, causing _classify_lun_maps to miss the issue.
     for item in collected:
         nova_s   = item["nova_host"].split(".")[0].lower()
         cinder_s = item["cinder_host"].split(".")[0].lower() if item["cinder_host"] else ""
@@ -853,7 +845,6 @@ def detect(servers, hitachi_host, hitachi_user, hitachi_password, storage_id,
                 for iqn in hg_data.get("iqns", set()):
                     host_iqn_map.setdefault(nova_s, set()).add(iqn)
 
-    # Pass 2c: SSH for hosts still without IQNs
     if ssh_user:
         ssh_hosts = {h for h in {item["nova_host"] for item in collected if item["nova_host"]}
                      if h.split(".")[0].lower() not in host_iqn_map}
@@ -876,7 +867,6 @@ def detect(servers, hitachi_host, hitachi_user, hitachi_password, storage_id,
                         print(f"  [WARN] {short}: SSH failed — host group check will be skipped "
                               f"for Ubuntu hosts", flush=True)
 
-    # Pass 3: classify per item
     findings     = []
     warned_hosts = set()
     for item in collected:
