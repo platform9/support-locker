@@ -497,7 +497,48 @@ log "STARTING NODE-BY-NODE MIGRATION"
 log "======================================================================"
 
 # Loop through all nodes, but perform specific actions based on node type
-ALL_NODES_INFO=$(kubectl get nodes -o json | jq -r '.items[] | "\(.metadata.name) \([.status.addresses[] | select(.type=="InternalIP") | .address][0])"') # Corrected jq
+#
+# BGP Route Reflector safety: if the cluster uses Calico BGP Route Reflectors
+# (nodeToNodeMeshEnabled: false), migrating an RR node before its non-RR peers
+# can cause a transient cascading loss of BGP routes on nodes that haven't
+# migrated yet. To avoid this, RR nodes are always ordered last.
+#
+# RR nodes are identified dynamically: the customer's own existing BGPPeer
+# objects reveal which node label they use for RR selection (e.g. a peerSelector
+# of "has(is-route-reflector)" or "is-route-reflector == 'true'" both yield the
+# label key "is-route-reflector") - this works regardless of what label name the
+# customer chose, since we read it from their own config rather than guessing.
+# If no BGPPeer exists, or its selector doesn't match either pattern, this falls
+# back to the standard Calico "projectcalico.org/RouteReflectorClusterID" node
+# annotation. If neither signal is present (no RRs in this cluster), RR_NODE_COUNT
+# is 0 and this produces the exact same node list/order as a plain
+# `kubectl get nodes` query - no behavior change on clusters without RRs.
+ALL_NODES_JSON=$(kubectl get nodes -o json)
+RR_LABEL_KEY=$(kubectl get bgppeers.crd.projectcalico.org -o json 2>/dev/null | jq -r '
+  [.items[].spec.peerSelector // empty
+   | (capture("has\\((?<k>[^)]+)\\)").k // capture("^!?\\s*(?<k>[A-Za-z0-9_./-]+)\\s*(==|in)").k)]
+  | map(select(. != null)) | first // empty
+')
+
+if [ -n "${RR_LABEL_KEY}" ]; then
+  log "Detected RR node label '${RR_LABEL_KEY}' from existing BGPPeer config."
+  RR_FILTER='(.metadata.labels // {}) | has($key)'
+else
+  log "No BGPPeer-derived RR label found; falling back to projectcalico.org/RouteReflectorClusterID annotation."
+  RR_FILTER='((.metadata.annotations // {})["projectcalico.org/RouteReflectorClusterID"] // "") != ""'
+fi
+
+RR_NODE_COUNT=$(echo "${ALL_NODES_JSON}" | jq -r --arg key "${RR_LABEL_KEY}" "[.items[] | select(${RR_FILTER})] | length")
+if [ "${RR_NODE_COUNT}" -gt 0 ]; then
+  log "Detected ${RR_NODE_COUNT} BGP Route Reflector node(s). They will be migrated last."
+else
+  log "No BGP Route Reflector nodes detected. Migrating nodes in default order."
+fi
+ALL_NODES_INFO=$(echo "${ALL_NODES_JSON}" | jq -r --arg key "${RR_LABEL_KEY}" "
+  [.items[] | select(${RR_FILTER} | not)] as \$non_rr |
+  [.items[] | select(${RR_FILTER})] as \$rr |
+  (\$non_rr + \$rr)[] | \"\(.metadata.name) \([.status.addresses[] | select(.type==\"InternalIP\") | .address][0])\"
+")
 MIGRATED_NODES_COUNT=0
 TOTAL_NODES=$(echo "${ALL_NODES_INFO}" | wc -l)
 
