@@ -503,39 +503,98 @@ log "======================================================================"
 # can cause a transient cascading loss of BGP routes on nodes that haven't
 # migrated yet. To avoid this, RR nodes are always ordered last.
 #
-# RR nodes are identified dynamically: the customer's own existing BGPPeer
-# objects reveal which node label they use for RR selection (e.g. a peerSelector
-# of "has(is-route-reflector)" or "is-route-reflector == 'true'" both yield the
-# label key "is-route-reflector") - this works regardless of what label name the
-# customer chose, since we read it from their own config rather than guessing.
-# If no BGPPeer exists, or its selector doesn't match either pattern, this falls
-# back to the standard Calico "projectcalico.org/RouteReflectorClusterID" node
-# annotation. If neither signal is present (no RRs in this cluster), RR_NODE_COUNT
-# is 0 and this produces the exact same node list/order as a plain
-# `kubectl get nodes` query - no behavior change on clusters without RRs.
+# RR nodes are identified using two signals, combined with OR:
+#   1. The standard Calico "projectcalico.org/RouteReflectorClusterID" node
+#      annotation - this is what actually makes Calico's BGP daemon treat a
+#      node as an RR, so it is always checked.
+#   2. A label key/value derived from the customer's own existing BGPPeer
+#      objects, correlating nodeSelector and peerSelector across all BGPPeer
+#      objects so an unrelated peer (e.g. a Top-of-Rack BGP peer) can't be
+#      mistaken for the RR-selecting one. has() selectors are presence-only
+#      (matching Calico's own semantics); == selectors require the matching
+#      value too, so e.g. a node explicitly labeled is-route-reflector=false
+#      is correctly excluded. Negated selectors (!has(...)) are skipped.
+# If `kubectl get bgppeers` itself fails (RBAC, missing CRD, non-KDD
+# datastore), that is logged explicitly rather than silently treated the same
+# as "no BGPPeer objects found". And if BGPConfiguration reports
+# nodeToNodeMeshEnabled=false but zero RR nodes were detected by either
+# signal, that is almost certainly a detection miss rather than a true
+# RR-less cluster, so the operator is asked to confirm before continuing
+# unordered. On a cluster with no RR nodes at all, none of this changes the
+# node list/order from a plain `kubectl get nodes` query.
 ALL_NODES_JSON=$(kubectl get nodes -o json)
-RR_LABEL_KEY=$(kubectl get bgppeers.crd.projectcalico.org -o json 2>/dev/null | jq -r '
-  [.items[].spec.peerSelector // empty
-   | (capture("has\\((?<k>[^)]+)\\)").k // capture("^!?\\s*(?<k>[A-Za-z0-9_./-]+)\\s*(==|in)").k)]
-  | map(select(. != null)) | first // empty
-')
 
-if [ -n "${RR_LABEL_KEY}" ]; then
-  log "Detected RR node label '${RR_LABEL_KEY}' from existing BGPPeer config."
-  RR_FILTER='(.metadata.labels // {}) | has($key)'
+BGP_MESH_ENABLED=$(kubectl get bgpconfigurations.crd.projectcalico.org default -o jsonpath='{.spec.nodeToNodeMeshEnabled}' 2>/dev/null)
+BGP_MESH_ENABLED="${BGP_MESH_ENABLED:-true}"
+
+BGPPEERS_ERR_FILE=$(mktemp)
+BGPPEERS_JSON=$(kubectl get bgppeers.crd.projectcalico.org -o json 2>"${BGPPEERS_ERR_FILE}")
+BGPPEERS_RC=$?
+BGPPEERS_ERR=$(cat "${BGPPEERS_ERR_FILE}")
+rm -f "${BGPPEERS_ERR_FILE}"
+
+RR_LABEL_KEY=""
+RR_LABEL_VALUE=""
+RR_MATCH_TYPE=""
+
+if [ "${BGPPEERS_RC}" -ne 0 ]; then
+  log "WARNING: 'kubectl get bgppeers' failed (rc=${BGPPEERS_RC}): ${BGPPEERS_ERR}"
+  log "Cannot read BGPPeer config to detect RR nodes. Falling back to the projectcalico.org/RouteReflectorClusterID annotation only."
 else
-  log "No BGPPeer-derived RR label found; falling back to projectcalico.org/RouteReflectorClusterID annotation."
-  RR_FILTER='((.metadata.annotations // {})["projectcalico.org/RouteReflectorClusterID"] // "") != ""'
+  # Correlate nodeSelector keys with (non-negated) peerSelector keys across all
+  # BGPPeer objects: the RR-defining peer is the one whose selector key is also
+  # used to select nodes somewhere, which rules out an unrelated peer (e.g. a
+  # ToR BGPPeer whose nodeSelector is typically all() / not label-based).
+  RR_CANDIDATE=$(echo "${BGPPEERS_JSON}" | jq -r '
+    def extract:
+      . as $s
+      | ($s | test("^\\s*!")) as $neg
+      | ( $s | capture("has\\((?<k>[^)]+)\\)") | {key: .k, value: null, type: "has"} ) //
+        ( $s | capture("(?<k>[A-Za-z0-9_./-]+)\\s*==\\s*.(?<v>[^\"'\'']*)." ) | {key: .k, value: .v, type: "eq"} ) //
+        empty
+      | . + {negated: $neg};
+    [.items[].spec.nodeSelector // empty | extract | .key] as $node_keys |
+    [.items[].spec.peerSelector // empty | extract | select(.negated | not)] as $peer_candidates |
+    ($peer_candidates | map(select(.key as $k | $node_keys | index($k)))) as $matched |
+    ($matched[0] // empty)
+  ' 2>/dev/null)
+
+  if [ -n "${RR_CANDIDATE}" ] && [ "${RR_CANDIDATE}" != "null" ]; then
+    RR_LABEL_KEY=$(echo "${RR_CANDIDATE}" | jq -r '.key')
+    RR_MATCH_TYPE=$(echo "${RR_CANDIDATE}" | jq -r '.type')
+    RR_LABEL_VALUE=$(echo "${RR_CANDIDATE}" | jq -r '.value // empty')
+  fi
 fi
 
-RR_NODE_COUNT=$(echo "${ALL_NODES_JSON}" | jq -r --arg key "${RR_LABEL_KEY}" "[.items[] | select(${RR_FILTER})] | length")
+ANNOTATION_FILTER='((.metadata.annotations // {})["projectcalico.org/RouteReflectorClusterID"] // "") != ""'
+if [ -n "${RR_LABEL_KEY}" ]; then
+  if [ "${RR_MATCH_TYPE}" == "eq" ]; then
+    LABEL_FILTER='((.metadata.labels // {})[$key] // "") == $val'
+    log "Detected RR node label '${RR_LABEL_KEY}=${RR_LABEL_VALUE}' from existing BGPPeer config (combined with the RouteReflectorClusterID annotation)."
+  else
+    LABEL_FILTER='((.metadata.labels // {}) | has($key))'
+    log "Detected RR node label '${RR_LABEL_KEY}' (presence-based) from existing BGPPeer config (combined with the RouteReflectorClusterID annotation)."
+  fi
+  RR_FILTER="(${ANNOTATION_FILTER}) or (${LABEL_FILTER})"
+else
+  RR_FILTER="${ANNOTATION_FILTER}"
+  log "No usable BGPPeer-derived RR label found; using the projectcalico.org/RouteReflectorClusterID annotation only."
+fi
+
+RR_NODE_COUNT=$(echo "${ALL_NODES_JSON}" | jq -r --arg key "${RR_LABEL_KEY}" --arg val "${RR_LABEL_VALUE}" "[.items[] | select(${RR_FILTER})] | length")
+
+if [ "${BGP_MESH_ENABLED}" == "false" ] && [ "${RR_NODE_COUNT}" -eq 0 ]; then
+  log "WARNING: BGPConfiguration reports nodeToNodeMeshEnabled=false (this cluster expects Route Reflectors), but 0 RR nodes were detected. This likely means RR detection failed, not that this cluster truly has no RRs."
+  confirm "Proceed with migration in UNORDERED node sequence anyway? This risks the cascading BGP route-loss failure mode this ordering exists to prevent."
+fi
+
 if [ "${RR_NODE_COUNT}" -gt 0 ]; then
   log "Detected ${RR_NODE_COUNT} BGP Route Reflector node(s). They will be migrated last."
 else
   log "No BGP Route Reflector nodes detected. Migrating nodes in default order."
 fi
-ALL_NODES_INFO=$(echo "${ALL_NODES_JSON}" | jq -r --arg key "${RR_LABEL_KEY}" "
-  [.items[] | select(${RR_FILTER} | not)] as \$non_rr |
+ALL_NODES_INFO=$(echo "${ALL_NODES_JSON}" | jq -r --arg key "${RR_LABEL_KEY}" --arg val "${RR_LABEL_VALUE}" "
+  [.items[] | select((${RR_FILTER}) | not)] as \$non_rr |
   [.items[] | select(${RR_FILTER})] as \$rr |
   (\$non_rr + \$rr)[] | \"\(.metadata.name) \([.status.addresses[] | select(.type==\"InternalIP\") | .address][0])\"
 ")
